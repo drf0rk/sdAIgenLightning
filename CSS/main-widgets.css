@@ -81,14 +81,6 @@ a {
     text-decoration: none;
 }
 
- *,
- *::before,
- *::after {
-   box-sizing: border-box;
-   margin: 0;
-   padding: 0;
- }
-
 
 /* Special fixes for IpyWidgets */
 /* Fix Vertical Centering */
@@ -189,10 +181,12 @@ a {
 
 /* Container style */
 
+.mainContainer * { /* Fix For Containers Shadow */
+  overflow: visible !important;
+}
 .mainContainer {
     padding: 5px;
     gap: 5px;
-    /* overflow: hidden; */
 }
 
 .container {
@@ -203,7 +197,7 @@ a {
     border: var(--aw-container-border);
     border-radius: 16px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.35), inset 0 0 10px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
+    overflow: hidden !important;
 }
 .container::after {
     position: absolute;
@@ -225,12 +219,13 @@ a {
     height: 305px;
 }
 
-/* GDrive Button | Ебать костыли :3 */
+/* GDrive Button */
 .gdrive-btn {
     align-self: flex-start;
     min-width: 48px;
     min-height: 48px;
-    margin: 0 15px !important;
+    margin: 0 !important;
+    margin-left: 15px !important; /* SPACE */
     padding: 0 !important;
     background-size: 70%;
     background-position: center;
@@ -248,10 +243,6 @@ a {
     background-color: #006d33;
     border-color: #00d062;
     transform: scale(0.9) !important;
-}
-
-.gdrive-btn.hidden {
-  display: none;
 }
 
 
@@ -468,7 +459,7 @@ a {
 }
 
 .container.hide,
-.gdrive-btn.hide, /* WIP! */
+.gdrive-btn.hide,
 .button_save.hide {
     animation: hideWidgets 0.5s forwards ease;
 }

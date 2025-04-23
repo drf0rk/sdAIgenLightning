@@ -170,6 +170,29 @@ class WidgetFactory:
         """Create a vertical box layout for widgets."""
         return self._create_box(widgets.VBox, children, class_names, **kwargs)
 
+    def create_box(self, children, direction='column', wrap=True, class_names=None, **kwargs):
+        """
+        Create a flexible Box container with adjustable direction and wrapping.
+        -  direction (str): Layout direction - 'row' (default) or 'column'.
+        -  wrap (bool): Enable flex wrapping for children (only for Box container).
+        """
+        if direction not in ('row', 'column'):
+            raise ValueError(f"Invalid direction: {direction}. Use 'row' or 'column'.")
+
+        layout = kwargs.pop('layout', {})
+        layout.update({
+            'flex_flow': direction,
+            'flex_wrap': 'wrap' if wrap else 'nowrap'
+        })
+
+        return self._create_box(
+            widgets.Box,
+            children,
+            class_names=class_names,
+            layout=layout,
+            **kwargs
+        )
+
     # Other
     def display(self, widgets):
         """Display one or multiple widgets."""
