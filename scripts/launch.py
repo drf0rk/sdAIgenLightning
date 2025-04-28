@@ -255,6 +255,12 @@ class TunnelManager:
                 'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
             }))
 
+        if UI == 'ComfyUI':
+            services.append(('Gradio', {
+                'command': f"gradio-tun {self.tunnel_port}",
+                'pattern': re.compile(r'[\w-]+\.gradio\.live')
+            }))
+
         # Create status printer task
         printer_task = asyncio.create_task(self._print_status())
 

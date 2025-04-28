@@ -44,7 +44,7 @@ def read_model_data(file_path, data_type):
 
 webui_selection = {
     'A1111':   "--xformers --no-half-vae",
-    'ComfyUI': "--dont-print-server --use-pytorch-cross-attention",  # Removed: --preview-method auto
+    'ComfyUI': "--dont-print-server --preview-method auto --use-pytorch-cross-attention",
     'Forge':   "--disable-xformers --opt-sdp-attention --cuda-stream --pin-shared-memory",
     'ReForge': "--xformers --cuda-stream --pin-shared-memory",
     'SD-UX':   "--xformers --no-half-vae"

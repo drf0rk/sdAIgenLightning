@@ -2,7 +2,8 @@
 
 ## Directory -> `__configs__`
 - Customization files, styles and other files for the UI.
-- **install-deps.py**: Script for automatic download of libraries for all custom nodes (ComfyUI).
+- **install-deps.py**:  Script to automatically install libraries/run scripts for all user nodes (ComfyUI).
+- **gradio-tunneling.py**: Script replacing the original script (gradio-tunneling) - to create a tunnel~ (ComfyUI).
 
 ## Directory -> `CSS`
 
@@ -22,6 +23,8 @@
 - **TunnelHub.py**: Module for managing tunnels.
 - **widget_factory.py**: Factory for creating ipywidgets.
 - **Manager.py**: Adding quick functions for downloading and cloning git repositories: `m_download` & `m_clone`.
+
+- **__season.py**: A special module for beautiful display of the encounter message - setup.py.
 
 ## Directory -> `scripts`
 

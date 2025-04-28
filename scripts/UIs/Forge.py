@@ -26,6 +26,7 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 ENV_NAME = js.read(SETTINGS_PATH, 'ENVIRONMENT.env_name')
 
 REPO_URL = f"https://huggingface.co/NagisaNao/ANXETY/resolve/main/{UI}.zip"
+FORK_REPO = js.read(SETTINGS_PATH, 'ENVIRONMENT.fork')
 BRANCH = js.read(SETTINGS_PATH, 'ENVIRONMENT.branch')
 EXTS = js.read(SETTINGS_PATH, 'WEBUI.extension_dir')
 
@@ -60,7 +61,7 @@ async def download_files(file_list):
 
 async def download_configuration():
     ## FILES
-    url_cfg = f"https://raw.githubusercontent.com/anxety-solo/sdAIgen/refs/heads/{BRANCH}/__configs__"
+    url_cfg = f"https://raw.githubusercontent.com/{FORK_REPO}/{BRANCH}/__configs__"
     configs = [
         # settings
         f"{url_cfg}/{UI}/config.json",

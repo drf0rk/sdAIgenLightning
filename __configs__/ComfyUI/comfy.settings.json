@@ -76,5 +76,6 @@
             }
         }
     },
-    "pysssss.ImageFeed.Location": "hidden"
+    "pysssss.ImageFeed.Location": "hidden",
+    "pysssss.ModelInfo.NsfwLevel": "PG"
 }
