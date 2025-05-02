@@ -5,91 +5,87 @@ import json_utils as js    # JSON
 from pathlib import Path
 import os
 
+
 # Constants
 HOME = Path.home()
 SCR_PATH = HOME / 'ANXETY'
-SETTINGS_PATH = HOME / 'ANXETY' / 'settings.json'
+SETTINGS_PATH = SCR_PATH / 'settings.json'
 
 WEBUI_PATHS = {
-    'A1111':   ('Stable-diffusion', 'VAE', 'Lora', 'embeddings', 'extensions', 'ESRGAN', 'outputs'),
-    'ComfyUI': ('checkpoints', 'vae', 'loras', 'embeddings', 'custom_nodes', 'upscale_models', 'output'),
-    'Forge':   ('Stable-diffusion', 'VAE', 'Lora', 'embeddings', 'extensions', 'ESRGAN', 'outputs'),
-    'ReForge': ('Stable-diffusion', 'VAE', 'Lora', 'embeddings', 'extensions', 'ESRGAN', 'outputs'),
-    'SD-UX':   ('Stable-diffusion', 'VAE', 'Lora', 'embeddings', 'extensions', 'ESRGAN', 'outputs')
+    'A1111': (
+        'Stable-diffusion', 'VAE', 'Lora', 
+        'embeddings', 'extensions', 'ESRGAN', 'outputs'
+    ),
+    'ComfyUI': (
+        'checkpoints', 'vae', 'loras', 
+        'embeddings', 'custom_nodes', 'upscale_models', 'output'
+    )
 }
 
+DEFAULT_UI = 'A1111'
+
+
 def update_current_webui(current_value):
-    """Update the current WebUI value and save it."""
-    current_stored_value = js.read(SETTINGS_PATH, 'WEBUI.current')
+    """Update the current WebUI value and save settings."""
+    current_stored = js.read(SETTINGS_PATH, 'WEBUI.current')
     latest_value = js.read(SETTINGS_PATH, 'WEBUI.latest', None)
 
-    if latest_value is None or current_stored_value != current_value:
-        js.save(SETTINGS_PATH, 'WEBUI.latest', current_stored_value)
+    if latest_value is None or current_stored != current_value:
+        js.save(SETTINGS_PATH, 'WEBUI.latest', current_stored)
         js.save(SETTINGS_PATH, 'WEBUI.current', current_value)
 
     js.save(SETTINGS_PATH, 'WEBUI.webui_path', str(HOME / current_value))
     _set_webui_paths(current_value)
 
 def _set_webui_paths(ui):
-    """Set web UI paths based on the selected UI."""
-    if ui not in WEBUI_PATHS:
-        return
+    """Configure paths for specified UI, fallback to A1111 for unknown UIs"""
+    selected_ui = ui if ui in WEBUI_PATHS else DEFAULT_UI
+    webui_root = HOME / ui
+    models_root = webui_root / 'models'
 
-    webui = HOME / ui
-    models = webui / 'models'
-    checkpoint, vae, lora, embed, extension, upscale, webui_output = WEBUI_PATHS[ui]
+    # Get path components for selected UI
+    paths = WEBUI_PATHS[selected_ui]
+    checkpoint, vae, lora, embed, extension, upscale, output = paths
 
-    model_dir = models / checkpoint
-    vae_dir = models / vae
-    lora_dir = models / lora
-    embed_dir = (models / embed if ui == 'ComfyUI' else webui / embed)
-    extension_dir = webui / extension
-    upscale_dir = models / upscale
-    control_dir = models / ('controlnet' if ui == 'ComfyUI' else 'ControlNet')
-    output_dir = webui / webui_output
+    # Configure special paths
+    is_comfy = selected_ui == 'ComfyUI'
+    control_dir = 'controlnet' if is_comfy else 'ControlNet'
+    embed_root = models_root if is_comfy else webui_root
+    config_root = webui_root / 'user/default' if is_comfy else webui_root
 
-    config_dir = (webui / 'user/default' if ui == 'ComfyUI' else webui)
-
-    # other
-    adetailer_dir = models / ('ultralytics' if ui == 'ComfyUI' else 'adetailer')
-    clip_dir = models / ('clip' if ui == 'ComfyUI' else 'text_encoder')
-    unet_dir = models / ('unet' if ui == 'ComfyUI' else 'text_encoder')
-    vision_dir = models / 'clip_vision'
-    encoder_dir =  models / ('text_encoders' if ui == 'ComfyUI' else 'text_encoder')
-    diffusion_dir = models / 'diffusion_models'
-
-    paths = {
-        'model_dir': str(model_dir),
-        'vae_dir': str(vae_dir),
-        'lora_dir': str(lora_dir),
-        'embed_dir': str(embed_dir),
-        'extension_dir': str(extension_dir),
-        'control_dir': str(control_dir),
-        'upscale_dir': str(upscale_dir),
-        'adetailer_dir': str(adetailer_dir),
-        'clip_dir': str(clip_dir),
-        'unet_dir': str(unet_dir),
-        'vision_dir': str(vision_dir),
-        'encoder_dir': str(encoder_dir),
-        'diffusion_dir': str(diffusion_dir),
-        'output_dir': str(output_dir),
-        'config_dir': str(config_dir)
+    path_config = {
+        'model_dir': str(models_root / checkpoint),
+        'vae_dir': str(models_root / vae),
+        'lora_dir': str(models_root / lora),
+        'embed_dir': str(embed_root / embed),
+        'extension_dir': str(webui_root / extension),
+        'control_dir': str(models_root / control_dir),
+        'upscale_dir': str(models_root / upscale),
+        'output_dir': str(webui_root / output),
+        'config_dir': str(config_root),
+        # other dirs
+        'adetailer_dir': str(models_root / ('ultralytics' if is_comfy else 'adetailer')),
+        'clip_dir': str(models_root / ('clip' if is_comfy else 'text_encoder')),
+        'unet_dir': str(models_root / ('unet' if is_comfy else 'text_encoder')),
+        'vision_dir': str(models_root / 'clip_vision'),
+        'encoder_dir': str(models_root / ('text_encoders' if is_comfy else 'text_encoder')),
+        'diffusion_dir': str(models_root / 'diffusion_models')
     }
 
-    js.update(SETTINGS_PATH, 'WEBUI', paths)
+    js.update(SETTINGS_PATH, 'WEBUI', path_config)
 
 def handle_setup_timer(webui_path, timer_webui):
-    """Handle the setup timer by reading from and writing to a timer file."""
-    timer_file_path = Path(webui_path) / 'static' / 'timer.txt'
-    timer_file_path.parent.mkdir(parents=True, exist_ok=True)
+    """Manage timer persistence for WebUI instances."""
+    timer_file = Path(webui_path) / 'static' / 'timer.txt'
+    timer_file.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        with timer_file_path.open('r') as file:
-            timer_webui = float(file.read())
+        with timer_file.open('r') as f:
+            timer_webui = float(f.read())
     except FileNotFoundError:
         pass
 
-    with timer_file_path.open('w') as file:
-        file.write(str(timer_webui))
+    with timer_file.open('w') as f:
+        f.write(str(timer_webui))
 
     return timer_webui

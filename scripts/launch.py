@@ -107,7 +107,7 @@ def get_launch_command():
     if theme_accent != 'anxety':
         common_args += f" --anxety {theme_accent}"
 
-    os.environ.setdefault('IIB_ACCESS_CONTROL', 'disable')
+    # os.environ.setdefault('IIB_ACCESS_CONTROL', 'disable')
 
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"

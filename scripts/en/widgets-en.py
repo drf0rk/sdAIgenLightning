@@ -36,7 +36,7 @@ def read_model_data(file_path, data_type):
         model_names = list(local_vars['model_list'].keys())   # Return model names
         return ['none'] + model_names
     elif data_type == 'vae':
-        vae_names = list(local_vars['vae_list'].keys())    # Return the VAE names
+        vae_names = list(local_vars['vae_list'].keys())    # Return VAE names
         return ['none', 'ALL'] + vae_names
     elif data_type == 'cnet':
         cnet_names = list(local_vars['controlnet_list'].keys())   # Return ControlNet names

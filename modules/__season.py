@@ -7,12 +7,14 @@ TRANSLATIONS = {
         'done_message': "Done! Now you can run the cells below. ☄️",
         'runtime_env': "Runtime environment:",
         'file_location': "File location:",
+        'current_fork': "Current fork:",
         'current_branch': "Current branch:"
     },
     'ru': {
         'done_message': "Готово! Теперь вы можете выполнить ячейки ниже. ☄️",
         'runtime_env': "Среда выполнения:",
         'file_location': "Расположение файлов:",
+        'current_fork': "Текущий форк:",
         'current_branch': "Текущая ветка:"
     }
 }
@@ -28,7 +30,7 @@ def get_season():
     else:
         return 'autumn'
 
-def display_info(env, scr_folder, branch, lang='en'):
+def display_info(env, scr_folder, branch, lang='en', fork=None):
     season = get_season()
     translations = TRANSLATIONS.get(lang, TRANSLATIONS['en'])
 
@@ -80,6 +82,7 @@ def display_info(env, scr_folder, branch, lang='en'):
         <span>{translations['done_message']}</span>
         <span>{translations['runtime_env']} <span class="env">{env}</span></span>
         <span>{translations['file_location']} <span class="files-location">{scr_folder}</span></span>
+        {f"<span>{translations['current_fork']} <span class='fork'>{fork}</span></span>" if fork else ""}
         <span>{translations['current_branch']} <span class="branch">{branch}</span></span>
       </div>
     </div>
@@ -158,6 +161,7 @@ def display_info(env, scr_folder, branch, lang='en'):
     .env {{ color: #FFA500 !important; }}
     .files-location {{ color: #FF99C2 !important; }}
     .branch {{ color: #16A543 !important; }}
+    .fork {{ color: #C786D3 !important; }}
     </style>
     """
 
@@ -420,7 +424,8 @@ if __name__ == "__main__":
     parser.add_argument('env', type=str, help='Runtime environment')
     parser.add_argument('scr_folder', type=str, help='Script folder location')
     parser.add_argument('branch', type=str, help='Current branch')
-    parser.add_argument('lang', type=str, help='Language for messages (ru/eng)')
+    parser.add_argument('lang', type=str, help='Language for messages (ru/en)')
+    parser.add_argument('fork', type=str, help='Current git-fork')
 
     args = parser.parse_args()
 
@@ -428,5 +433,6 @@ if __name__ == "__main__":
         env=args.env,
         scr_folder=args.scr_folder,
         branch=args.branch,
-        lang=args.lang
+        lang=args.lang,
+        fork=args.fork
     )

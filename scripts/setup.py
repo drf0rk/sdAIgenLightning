@@ -145,14 +145,21 @@ def generate_file_list(structure, base_url, base_path):
     return walk(structure, [])
 
 async def download_file(session, url, path):
-    """Download and save single file"""
-    async with session.get(url) as resp:
-        resp.raise_for_status()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(await resp.read())
+    """Download and save single file with error handling"""
+    try:
+        async with session.get(url) as resp:
+            resp.raise_for_status()
+            content = await resp.read()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            return (True, url, path, None)
+    except aiohttp.ClientResponseError as e:
+        return (False, url, path, f"HTTP error {e.status}: {e.message}")
+    except Exception as e:
+        return (False, url, path, f"Error: {str(e)}")
 
-async def download_files_async(scr_path, lang, fork_user, fork_repo, branch):
-    """Main download executor"""
+async def download_files_async(scr_path, lang, fork_user, fork_repo, branch, log_errors):
+    """Main download executor with error logging"""
     files_structure = {
         'CSS': ['main-widgets.css', 'download-result.css', 'auto-cleaner.css'],
         'JS': ['main-widgets.js'],
@@ -172,10 +179,22 @@ async def download_files_async(scr_path, lang, fork_user, fork_repo, branch):
     async with aiohttp.ClientSession() as session:
         tasks = [download_file(session, url, path) for url, path in file_list]
 
-        for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc="Downloading files", unit="file"):
-            await task
+        errors = []
+        futures = asyncio.as_completed(tasks)
+        for future in tqdm(futures, total=len(tasks), desc="Downloading files", unit="file"):
+            result = await future
+            success, url, path, error = result
+            if not success:
+                errors.append((url, path, error))
 
-    clear_output()
+        clear_output()
+
+        if log_errors and errors:
+            print("\nErrors occurred during download:")
+            for url, path, error in errors:
+                print(f"URL: {url}")
+                print(f"Path: {path}")
+                print(f"Error: {error}\n")
 
 
 # ===================== MAIN EXECUTION =====================
@@ -187,6 +206,7 @@ async def main_async(args=None):
     parser.add_argument('-b', '--branch', type=str, default='main', help='Branch to download files from (default: main)')
     parser.add_argument('-f', '--fork', type=str, default=None, help='Specify project fork (user or user/repo)')
     parser.add_argument('-s', '--skip-download', action='store_true', help='Skip downloading files and just update the directory and modules')
+    parser.add_argument('-L', '--log', action='store_true', help='Enable logging of download errors')
 
     args, _ = parser.parse_known_args(args)
 
@@ -194,7 +214,7 @@ async def main_async(args=None):
     user, repo = get_fork_info(args.fork)   # gitLogin , gitRepoName
 
     if not args.skip_download:
-        await download_files_async(SCR_PATH, args.lang, user, repo, args.branch)    # download scripts files
+        await download_files_async(SCR_PATH, args.lang, user, repo, args.branch, args.log)    # download scripts files
 
     setup_module_folder(SCR_PATH)   # setup main dir -> modules
 
@@ -208,7 +228,8 @@ async def main_async(args=None):
         env=env,
         scr_folder=str(SCR_PATH),
         branch=args.branch,
-        lang=args.lang
+        lang=args.lang,
+        fork=args.fork
     )
 
 if __name__ == '__main__':

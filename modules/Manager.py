@@ -18,7 +18,7 @@ CD = os.chdir
 
 # Constants
 HOME = Path.home()
-SCR_PATH = Path(HOME / 'ANXETY')
+SCR_PATH = HOME / 'ANXETY'
 SETTINGS_PATH = SCR_PATH / 'settings.json'
 
 CAI_TOKEN = js.read(SETTINGS_PATH, 'WIDGETS.civitai_token') or '65b66176dcf284b266579de57fbdc024'
