@@ -194,51 +194,53 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
 
     # === Season Scripts ===
 
-    ## OLD VER
+    ## OLD VER | adaptation needed...
     # WINTER_SCRIPT = """
     # <script>
-    # (function() {
-    #   const container = document.querySelector('.season-container');
-    #   const style = document.createElement('style');
-    #   style.innerHTML = `
-    #     .snowflake {
-    #       position: absolute;
-    #       background: white;
-    #       border-radius: 50%;
-    #       filter: blur(1px);
-    #       opacity: 0;
-    #       animation: snow-fall linear forwards;
-    #     }
-    #     @keyframes snow-fall {
-    #       0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-    #       20% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
-    #       100% { opacity: 0; transform: translate(-50%, 150%) scale(0.5); }
-    #     }
-    #   `;
-    #   document.head.appendChild(style);
+    # // Function to create snowflakes
+    # function createSnowflake() {
+    #   const snowContainer = document.getElementById('snow-container');
+    #   const snowflake = document.createElement('div');
+    #   snowflake.className = 'snowflake';
 
-    #   function createSnowflake() {
-    #     const snowflake = document.createElement('div');
-    #     snowflake.className = 'snowflake';
+    #   // Set random size
+    #   const size = Math.random() * 5 + 3; // Size from 3 to 8 pixels
+    #   snowflake.style.width = size + 'px';
+    #   snowflake.style.height = size + 'px';
 
-    #     const size = Math.random() * 5 + 3;
-    #     const x = Math.random() * 100;
-    #     const duration = Math.random() * 3 + 2;
+    #   // Position the snowflake within the snow container
+    #   const containerRect = snowContainer.getBoundingClientRect();
+    #   snowflake.style.left = Math.random() * (containerRect.width - size) + 'px';
+    #   snowflake.style.top = -size + 'px'; // Start just above the container
 
-    #     snowflake.style.cssText = `
-    #       width: ${size}px;
-    #       height: ${size}px;
-    #       left: ${x}%;
-    #       top: ${Math.random() * 100}%;
-    #       animation: snow-fall ${duration}s linear forwards;
-    #     `;
+    #   // Set random opacity between 0.1 and 0.5
+    #   const opacity = Math.random() * 0.4 + 0.1;
+    #   snowflake.style.opacity = opacity;
 
-    #     snowflake.addEventListener('animationend', () => snowflake.remove());
-    #     container.appendChild(snowflake);
-    #   }
+    #   // Set random fall duration and angle (up to 25 degrees)
+    #   const fallDuration = Math.random() * 3 + 2; // Random fall duration (from 2 to 5 seconds)
+    #   const angle = (Math.random() * 50 - 25) * (Math.PI / 180); // Angle from -25 to 25 degrees
+    #   const horizontalMovement = Math.sin(angle) * (containerRect.height / 2); // Horizontal shift
+    #   const verticalMovement = Math.cos(angle) * (containerRect.height + 10); // Vertical shift
 
-    #   setInterval(createSnowflake, 50);
-    # })();
+    #   snowContainer.appendChild(snowflake); // Append snowflake to snow container
+
+    #   // Animation for falling with horizontal movement
+    #   snowflake.animate([
+    #     { transform: `translate(0, 0)`, opacity: 1 },
+    #     { transform: `translate(${horizontalMovement}px, ${verticalMovement}px)`, opacity: 0 }
+    #   ], {
+    #     duration: fallDuration * 1000,
+    #     easing: 'linear',
+    #     fill: 'forwards'
+    #   });
+
+    #   // Also remove the snowflake after falling
+    #   setTimeout(() => {
+    #     snowflake.remove();
+    #   }, fallDuration * 1000);
+    # }
+    # setInterval(createSnowflake, 50);
     # </script>
     # """
 

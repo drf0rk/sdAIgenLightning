@@ -27,25 +27,25 @@ widgets_js = JS / 'main-widgets.js'
 
 def read_model_data(file_path, data_type):
     """Reads model, VAE, or ControlNet data from the specified file."""
+    type_map = {
+        'model': ('model_list', ['none']),
+        'vae': ('vae_list', ['none', 'ALL']),
+        'cnet': ('controlnet_list', ['none', 'ALL'])
+    }
+    key, prefixes = type_map[data_type]
     local_vars = {}
 
     with open(file_path) as f:
         exec(f.read(), {}, local_vars)
 
-    if data_type == 'model':
-        model_names = list(local_vars['model_list'].keys())   # Return model names
-        return ['none'] + model_names
-    elif data_type == 'vae':
-        vae_names = list(local_vars['vae_list'].keys())    # Return VAE names
-        return ['none', 'ALL'] + vae_names
-    elif data_type == 'cnet':
-        cnet_names = list(local_vars['controlnet_list'].keys())   # Return ControlNet names
-        return ['none', 'ALL'] + cnet_names
+    names = list(local_vars[key].keys())
+    return prefixes + names
 
 webui_selection = {
     'A1111':   "--xformers --no-half-vae",
     'ComfyUI': "--dont-print-server --preview-method auto --use-pytorch-cross-attention",
     'Forge':   "--disable-xformers --opt-sdp-attention --cuda-stream --pin-shared-memory",
+    'Classic': "--xformers --cuda-stream --pin-shared-memory",
     'ReForge': "--xformers --cuda-stream --pin-shared-memory",
     'SD-UX':   "--xformers --no-half-vae"
 }

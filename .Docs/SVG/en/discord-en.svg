@@ -3,12 +3,12 @@
         <div xmlns="http://www.w3.org/1999/xhtml">
             <style>
 			@keyframes rotateLabel {
-				0% {
-					transform: rotate(1deg) translateY(-20px);
-				}
-				100% {
-					transform: rotate(-1deg) translateY(-20px);
-				}
+			    0% {
+			        transform: rotate(1deg) translateY(-20px);
+			    }
+			    100% {
+			        transform: rotate(-1deg) translateY(-20px);
+                    }
 			}
 
                 @keyframes fadeIn {

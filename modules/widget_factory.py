@@ -10,9 +10,24 @@ class WidgetFactory:
         self.default_style = {'description_width': 'initial'}
         self.default_layout = widgets.Layout()
 
+    def _validate_class_names(self, class_names):
+        """Validate and normalize class names."""
+        if class_names is None:
+            return []
+
+        if isinstance(class_names, str):
+            return [class_names.strip()]
+
+        if isinstance(class_names, list):
+            return [cls.strip() for cls in class_names if cls.strip()]
+
+        self._log(f"Invalid class_names type: {type(class_names).__name__}", 'WARNING')
+        return []
+
     def add_classes(self, widget, class_names):
         """Add CSS classes to a widget."""
-        for cls in class_names:
+        classes = self._validate_class_names(class_names)
+        for cls in classes:
             widget.add_class(cls)
 
     # HTML

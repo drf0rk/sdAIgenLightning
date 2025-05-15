@@ -27,25 +27,25 @@ widgets_js = JS / 'main-widgets.js'
 
 def read_model_data(file_path, data_type):
     """Reads model, VAE, or ControlNet data from the specified file."""
+    type_map = {
+        'model': ('model_list', ['none']),
+        'vae': ('vae_list', ['none', 'ALL']),
+        'cnet': ('controlnet_list', ['none', 'ALL'])
+    }
+    key, prefixes = type_map[data_type]
     local_vars = {}
 
     with open(file_path) as f:
         exec(f.read(), {}, local_vars)
 
-    if data_type == 'model':
-        model_names = list(local_vars['model_list'].keys())   # Return model names
-        return ['none'] + model_names
-    elif data_type == 'vae':
-        vae_names = list(local_vars['vae_list'].keys())    # Return VAE names
-        return ['none', 'ALL'] + vae_names
-    elif data_type == 'cnet':
-        cnet_names = list(local_vars['controlnet_list'].keys())   # Return ControlNet names
-        return ['none', 'ALL'] + cnet_names
+    names = list(local_vars[key].keys())
+    return prefixes + names
 
 webui_selection = {
     'A1111':   "--xformers --no-half-vae",
     'ComfyUI': "--dont-print-server --preview-method auto --use-pytorch-cross-attention",
     'Forge':   "--disable-xformers --opt-sdp-attention --cuda-stream --pin-shared-memory",
+    'Classic': "--xformers --cuda-stream --pin-shared-memory",
     'ReForge': "--xformers --cuda-stream --pin-shared-memory",
     'SD-UX':   "--xformers --no-half-vae"
 }
@@ -59,7 +59,7 @@ HR = widgets.HTML('<hr>')
 model_header = factory.create_header('Model Selection')
 model_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'model')
 model_widget = factory.create_dropdown(model_options, 'Model:', '4. Counterfeit [Anime] [V3] + INP')
-model_num_widget = factory.create_text('Model Number:', '', 'Enter the model numbers for download.')
+model_num_widget = factory.create_text('Model Number:', '', 'Enter model numbers for download.')
 inpainting_model_widget = factory.create_checkbox('Inpainting Models', False, class_names=['inpaint'], layout={'width': '25%'})
 XL_models_widget = factory.create_checkbox('SDXL', False, class_names=['sdxl'])
 
@@ -70,7 +70,7 @@ switch_model_widget = factory.create_hbox([inpainting_model_widget, XL_models_wi
 vae_header = factory.create_header('VAE Selection')
 vae_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'vae')
 vae_widget = factory.create_dropdown(vae_options, 'Vae:', '3. Blessed2.vae')
-vae_num_widget = factory.create_text('Vae Number:', '', 'Enter the vae numbers for download.')
+vae_num_widget = factory.create_text('Vae Number:', '', 'Enter vae numbers for download.')
 
 # --- ADDITIONAL ---
 """Create additional configuration widgets."""
@@ -93,7 +93,7 @@ choose_changes_widget = factory.create_hbox(
 
 controlnet_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'cnet')
 controlnet_widget = factory.create_dropdown(controlnet_options, 'ControlNet:', 'none')
-controlnet_num_widget = factory.create_text('ControlNet Number:', '', 'Enter the ControlNet model numbers for download.')
+controlnet_num_widget = factory.create_text('ControlNet Number:', '', 'Enter ControlNet numbers for download.')
 commit_hash_widget = factory.create_text('Commit Hash:', '', 'Switching between branches or commits.')
 civitai_token_widget = factory.create_text('CivitAI Token:', '', 'Enter your CivitAi API token.')
 huggingface_token_widget = factory.create_text('HuggingFace Token:')
