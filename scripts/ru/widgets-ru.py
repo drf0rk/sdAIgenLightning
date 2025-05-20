@@ -247,7 +247,7 @@ def update_XL_options(change, widget):
     selected = change['new']
 
     default_model_values = {
-        True: ('4. WAI-illustrious [Anime] [V13] [XL]', 'none', 'none'),           # XL models
+        True: ('4. WAI-illustrious [Anime] [V14] [XL]', 'none', 'none'),           # XL models
         False: ('4. Counterfeit [Anime] [V3] + INP', '3. Blessed2.vae', 'none')    # SD 1.5 models
     }
 
