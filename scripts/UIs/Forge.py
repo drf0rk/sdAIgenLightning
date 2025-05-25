@@ -20,6 +20,7 @@ UI = 'Forge'
 
 HOME = Path.home()
 WEBUI = HOME / UI
+VENV = HOME / 'venv'
 SCR_PATH = HOME / 'ANXETY'
 SETTINGS_PATH = SCR_PATH / 'settings.json'
 
@@ -68,9 +69,11 @@ async def download_configuration():
         f"{url_cfg}/{UI}/ui-config.json",
         f"{url_cfg}/styles.csv",
         f"{url_cfg}/user.css",
-        # other
+        # other | UI
         f"{url_cfg}/card-no-preview.png, {WEBUI}/html",
-        f"{url_cfg}/notification.mp3"
+        f"{url_cfg}/notification.mp3",
+        # other | tunneling
+        f"{url_cfg}/gradio-tunneling.py, {VENV}/lib/python3.10/site-packages/gradio_tunneling, main.py"  # Replace py-Script
     ]
     await download_files(configs)
 

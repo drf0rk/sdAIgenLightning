@@ -99,15 +99,13 @@ def get_launch_command():
     base_args = commandline_arguments
     password = 'ha4ez7147b5vdlu5u8f8flrllgn61kpbgbh6emil'
 
-    common_args = ' --enable-insecure-extension-access --disable-console-progressbars --theme dark --share'
+    common_args = ' --enable-insecure-extension-access --disable-console-progressbars --theme dark'
     if ENV_NAME == 'Kaggle':
         common_args += f" --encrypt-pass={password}"
 
     # Accent Color For Anxety-Theme
     if theme_accent != 'anxety':
         common_args += f" --anxety {theme_accent}"
-
-    # os.environ.setdefault('IIB_ACCESS_CONTROL', 'disable')
 
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"
@@ -144,7 +142,7 @@ class TunnelManager:
 
     async def _print_status(self):
         """Async status printer"""
-        print('\033[33mChecking tunnels:\033[0m')
+        print('\033[33m>> Tunnels:\033[0m')
         while True:
             service_name = await self.checking_queue.get()
             print(f"- 🕒 Checking \033[36m{service_name}\033[0m...")
@@ -203,6 +201,10 @@ class TunnelManager:
     async def setup_tunnels(self):
         """Async tunnel configuration"""
         services = [
+            ('Gradio', {
+                'command': f"gradio-tun {self.tunnel_port}",
+                'pattern': re.compile(r'[\w-]+\.gradio\.live')
+            }),
             ('Serveo', {
                 'command': f"ssh -o StrictHostKeyChecking=no -R 80:localhost:{self.tunnel_port} serveo.net",
                 'pattern': re.compile(r'[\w-]+\.serveo\.net')
@@ -253,12 +255,6 @@ class TunnelManager:
             services.append(('Ngrok', {
                 'command': f"ngrok http http://localhost:{self.tunnel_port} --log stdout",
                 'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
-            }))
-
-        if UI == 'ComfyUI':
-            services.append(('Gradio', {
-                'command': f"gradio-tun {self.tunnel_port}",
-                'pattern': re.compile(r'[\w-]+\.gradio\.live')
             }))
 
         # Create status printer task

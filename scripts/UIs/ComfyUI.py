@@ -67,7 +67,7 @@ async def download_configuration():
         # workflows
         f"{url_cfg}/{UI}/workflows/anxety-workflow.json, {WEBUI}/user/default/workflows",
         # other | tunneling
-        f"{url_cfg}/{UI}/gradio-tunneling.py, {VENV}/lib/python3.10/site-packages/gradio_tunneling, main.py"  # Replace py-Script
+        f"{url_cfg}/gradio-tunneling.py, {VENV}/lib/python3.10/site-packages/gradio_tunneling, main.py"  # Replace py-Script
     ]
     await download_files(files)
 
@@ -103,9 +103,6 @@ def unpack_webui():
     m_download(f"{REPO_URL} {HOME} {UI}.zip")
     ipySys(f"unzip -q -o {zip_path} -d {WEBUI}")
     ipySys(f"rm -rf {zip_path}")
-
-    # Libs
-    ipySys('pip install gradio-tunneling')
 
 ## ====================== MAIN CODE ======================
 if __name__ == '__main__':

@@ -29,7 +29,6 @@ English | [Русский](README.ru-ru.md)
 <details>
 <summary>📚 Installed Extensions</summary>
 
-### *Legend:*
 | ✔️ — Installed | ❌ — Not Installed | 🔄 — Integrated Version | <sup>`†`</sup> — Only in *Kaggle* |
 |----------------|---------------------|-------------------------|----------------------------------|
 

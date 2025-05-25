@@ -3,7 +3,7 @@
 ## Directory -> `__configs__`
 > UI customization files, styles, and configuration scripts.
 - **[install-deps.py](../__configs__/ComfyUI/install-deps.py)**: Automatic dependency installer for ComfyUI user nodes.
-- **[gradio-tunneling.py](../__configs__/ComfyUI/gradio-tunneling.py)**: Modified tunnel creation script (replaces default ComfyUI version).
+- **[gradio-tunneling.py](../__configs__/gradio-tunneling.py)**: Modified gradio-tunnel creation script.
 
 ## Directory -> `CSS`
 > Stylesheets for UI-Widgets components.
