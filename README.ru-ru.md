@@ -1,5 +1,5 @@
 <div align="center">
-<img width="1080px" height="auto" src="https://raw.githubusercontent.com/anxety-solo/sdAIgen/dev/.Docs/Imgs/sample.png"/></br>
+<img width="1080px" height="auto" src="https://raw.githubusercontent.com/anxety-solo/sdAIgen/main/.Docs/Imgs/sample.png"/></br>
 <h1>~ ANXETY | Stable Diffusion WebUI | NoteBook V2 ~</h1>
 
 [English](README.md) | Русский
@@ -34,17 +34,18 @@
 
 | Extension | A1111 | Forge | Classic | ReForge | SD-UX |
 |-----------|-------|-------|---------|---------|-------|
-| [ADetailer](https://github.com/Bing-su/adetailer) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| [adetailer](https://github.com/Bing-su/adetailer) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [anxety-theme](https://github.com/anxety-solo/anxety-theme) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [Aspect-Ratio-Helper](https://github.com/thomasasfk/sd-webui-aspect-ratio-helper) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [CivitAi-Browser-plus](https://github.com/anxety-solo/sd-civitai-browser-plus) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [ControlNet](https://github.com/Mikubill/sd-webui-controlnet) | ✔️ | 🔄 | 🔄 | 🔄 | ✔️ |
-| [Infinite-Image-Browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| [Regional-Prompter](https://github.com/hako-mikan/sd-webui-regional-prompter) | ✔️ | ❌ | ❌ | ✔️ | ✔️ |
 | [Encrypt-Image](https://github.com/gutris1/sd-encrypt-image) | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> |
-| [SD-Hub](https://github.com/gutris1/sd-hub) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [Image-Info](https://github.com/gutris1/sd-image-info) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [Image-Viewer](https://github.com/gutris1/sd-image-viewer) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| [Infinite-Image-Browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| [Regional-Prompter](https://github.com/hako-mikan/sd-webui-regional-prompter) | ✔️ | ❌ | ❌ | ✔️ | ✔️ |
+| [SD-Couple](https://github.com/Haoming02/sd-forge-couple) | ❌ | ✔️ | ✔️ | ❌ | ❌ |
+| [SD-Hub](https://github.com/gutris1/sd-hub) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [State](https://github.com/ilian6806/stable-diffusion-webui-state) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [SuperMerger](https://github.com/hako-mikan/sd-webui-supermerger) | ✔️ | ✔️ | ❌ | ✔️ | ✔️ |
 | [Tag-Complete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |

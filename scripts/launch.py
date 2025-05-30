@@ -70,7 +70,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def _trashing():
-    dirs = ['A1111', 'ComfyUI', 'Forge', 'ReForge', 'SD-UX']
+    dirs = ['A1111', 'ComfyUI', 'Forge', 'Classic', 'ReForge', 'SD-UX']
     paths = [Path(HOME) / name for name in dirs]
 
     for path in paths:
@@ -82,9 +82,9 @@ def _update_config_paths():
     config_mapping = {
         'tagger_hf_cache_dir': f"{WEBUI}/models/interrogators/",
         'ad_extra_models_dir': adetailer_dir,
-        'sd_checkpoint_hash': '',
-        'sd_model_checkpoint': '',
-        'sd_vae': 'None'
+        # 'sd_checkpoint_hash': '',
+        # 'sd_model_checkpoint': '',
+        # 'sd_vae': 'None'
     }
 
     config_file = f"{WEBUI}/config.json"

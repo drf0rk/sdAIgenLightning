@@ -95,6 +95,7 @@ async def download_configuration():
         ## OTHER | OFF
         # 'https://github.com/thomasasfk/sd-webui-aspect-ratio-helper Aspect-Ratio-Helper',
         # 'https://github.com/zanllp/sd-webui-infinite-image-browsing Infinite-Image-Browsing',
+        # 'https://github.com/Haoming02/sd-forge-couple SD-Couple',
         # 'https://github.com/ilian6806/stable-diffusion-webui-state State',
         # 'https://github.com/hako-mikan/sd-webui-supermerger Supermerger',
         # 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete TagComplete',

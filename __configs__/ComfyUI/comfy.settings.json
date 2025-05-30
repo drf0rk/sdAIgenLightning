@@ -5,7 +5,7 @@
     "Comfy.Sidebar.Size": "small",
     "Comfy.ColorPalette": "comfy-anxety",
     "Comfy.Graph.LinkMarkers": 2,
-    "Comfy.NodeSuggestions.number": 20,
+    "Comfy.NodeSuggestions.number": 15,
     "Comfy.CustomColorPalettes": {
         "comfy-anxety": {
             "id": "comfy-anxety",

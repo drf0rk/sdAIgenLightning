@@ -25,6 +25,14 @@ widgets_js = JS / 'main-widgets.js'
 
 ## ======================= WIDGETS =======================
 
+def create_expandable_button(text, url):
+    return factory.create_html(f'''
+    <a href="{url}" target="_blank" class="button button_api">
+        <span class="icon"><</span>
+        <span class="text">{text}</span>
+    </a>
+    ''')
+
 def read_model_data(file_path, data_type):
     """Reads model, VAE, or ControlNet data from the specified file."""
     type_map = {
@@ -45,7 +53,7 @@ webui_selection = {
     'A1111':   "--xformers --no-half-vae",
     'ComfyUI': "--dont-print-server --preview-method auto --use-pytorch-cross-attention",
     'Forge':   "--disable-xformers --opt-sdp-attention --cuda-stream --pin-shared-memory",
-    'Classic': "--xformers --cuda-stream --pin-shared-memory",
+    'Classic': "--persistent-patches --cuda-stream --pin-shared-memory",    # Remove: --xformers
     'ReForge': "--xformers --cuda-stream --pin-shared-memory",
     'SD-UX':   "--xformers --no-half-vae"
 }
@@ -95,15 +103,21 @@ controlnet_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'cnet')
 controlnet_widget = factory.create_dropdown(controlnet_options, 'ControlNet:', 'none')
 controlnet_num_widget = factory.create_text('Номер ControlNet:', '', 'Введите номера моделей ControlNet для скачивания.')
 commit_hash_widget = factory.create_text('Commit Hash:', '', 'Переключение между ветвями или коммитами.')
-civitai_token_widget = factory.create_text('Токен CivitAI:', '', 'Введите свой API-токен CivitAi.')
-huggingface_token_widget = factory.create_text('Токен HuggingFace:')
 
-ngrok_token_widget = factory.create_text('Токен Ngrok:')
-ngrok_button = factory.create_html('<a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank">Получить Ngrok Токен</a>', class_names=['button', 'button_zrok'])
+civitai_token_widget = factory.create_text('CivitAI Token:', '', 'Введите свой API-токен CivitAi.')
+civitai_button = create_expandable_button('Получить CivitAI Токен', 'https://civitai.com/user/account')
+civitai_widget = factory.create_hbox([civitai_token_widget, civitai_button])
+
+huggingface_token_widget = factory.create_text('HuggingFace Token:')
+huggingface_button = create_expandable_button('Получить HuggingFace Токен', 'https://huggingface.co/settings/tokens')
+huggingface_widget = factory.create_hbox([huggingface_token_widget, huggingface_button])
+
+ngrok_token_widget = factory.create_text('Ngrok Token:')
+ngrok_button = create_expandable_button('Получить Ngrok Токен', 'https://dashboard.ngrok.com/get-started/your-authtoken')
 ngrok_widget = factory.create_hbox([ngrok_token_widget, ngrok_button])
 
-zrok_token_widget = factory.create_text('Токен Zrok:')
-zrok_button = factory.create_html('<a href="https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU" target="_blank">Зарегать Zrok Токен</a>', class_names=['button', 'button_zrok'])
+zrok_token_widget = factory.create_text('Zrok Token:')
+zrok_button = create_expandable_button('Зарегать Zrok Токен', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU')
 zrok_widget = factory.create_hbox([zrok_token_widget, zrok_button])
 
 commandline_arguments_widget = factory.create_text('Аргументы:', webui_selection['A1111'])
@@ -120,7 +134,7 @@ additional_widget_list = [
     HR,
     controlnet_widget, controlnet_num_widget,
     commit_hash_widget,
-    civitai_token_widget, huggingface_token_widget, zrok_widget, ngrok_widget,
+    civitai_widget, huggingface_widget, zrok_widget, ngrok_widget,
     HR,
     # commandline_arguments_widget,
     additional_footer
@@ -240,7 +254,8 @@ factory.display(WIDGET_LIST)
 
 # Initialize visibility | hidden
 check_custom_nodes_deps_widget.layout.display = 'none'
-empowerment_output_widget.layout.display = 'none'
+empowerment_output_widget.add_class('empowerment-output')
+empowerment_output_widget.add_class('hidden')
 
 # Callback functions for XL options
 def update_XL_options(change, widget):
@@ -293,16 +308,18 @@ def update_empowerment(change, widget):
         Extensions_url_widget,
         ADetailer_url_widget
     ]
+    for widget in customDL_widgets:    # For switching animation
+        widget.add_class('empowerment-text-field')
 
     # idk why, but that's the way it's supposed to be >_<'
     if selected_emp:
         for wg in customDL_widgets:
-            wg.layout.display = 'none'
-        empowerment_output_widget.layout.display = ''
+            wg.add_class('hidden')
+        empowerment_output_widget.remove_class('hidden')
     else:
         for wg in customDL_widgets:
-            wg.layout.display = ''
-        empowerment_output_widget.layout.display = 'none'
+            wg.remove_class('hidden')
+        empowerment_output_widget.add_class('hidden')
 
 # Connecting widgets
 factory.connect_widgets([(change_webui_widget, 'value')], update_change_webui)
