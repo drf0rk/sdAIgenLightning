@@ -84,7 +84,7 @@ def _update_config_paths():
         'ad_extra_models_dir': adetailer_dir,
         # 'sd_checkpoint_hash': '',
         # 'sd_model_checkpoint': '',
-        # 'sd_vae': 'None'
+        'sd_vae': 'None'
     }
 
     config_file = f"{WEBUI}/config.json"

@@ -2,7 +2,7 @@
 <img width="1080px" height="auto" src="https://raw.githubusercontent.com/anxety-solo/sdAIgen/main/.Docs/Imgs/sample.png"/></br>
 <h1>~ ANXETY | Stable Diffusion WebUI | NoteBook V2 ~</h1>
 
-English | [Русский](README.ru-ru.md)
+English | [Русский](README-ru-RU.md)
 
 </div>
 
@@ -16,6 +16,7 @@ English | [Русский](README.ru-ru.md)
     <a href="https://www.kaggle.com/code/anxetysolo/sdaigen-en-ipynb">
         <img src=".Docs/SVG/en/kaggle-en.svg" width="800" height="160" alt="kaggle">
     </a>
+    <h6>For more information about widgets, see <a href="https://github.com/anxety-solo/sdAIgen/wiki/Widgets">WiKi</a>.</h6>
 </div>
 
 ## 🌟 Features:
@@ -24,7 +25,6 @@ English | [Русский](README.ru-ru.md)
   - Preset custom: *Settings* + *Styles* + [*UI Theme*](https://github.com/anxety-solo/anxety-theme)
   - Download previews for *models, LoRa and embedding* (CivitAi) | ***There are limitations for Kaggle.***
   - Choosing WebUI between *A1111*, *ComfyUI*, *Forge*, *Classic (Forge)*, *ReForge*, *SD-UX.*
-  - [Rentry Page](https://rentry.co/faq-sdAIgen-en) → widget description.
 
 <details>
 <summary>📚 Installed Extensions</summary>
@@ -41,7 +41,7 @@ English | [Русский](README.ru-ru.md)
 | [ControlNet](https://github.com/Mikubill/sd-webui-controlnet) | ✔️ | 🔄 | 🔄 | 🔄 | ✔️ |
 | [Encrypt-Image](https://github.com/gutris1/sd-encrypt-image) | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> |
 | [Image-Info](https://github.com/gutris1/sd-image-info) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| [Image-Viewer](https://github.com/gutris1/sd-image-viewer) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| [Image-Viewer](https://github.com/gutris1/sd-image-viewer) | ✔️ | ✔️ | ❌ | ✔️ | ✔️ |
 | [Infinite-Image-Browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [Regional-Prompter](https://github.com/hako-mikan/sd-webui-regional-prompter) | ✔️ | ❌ | ❌ | ✔️ | ✔️ |
 | [SD-Couple](https://github.com/Haoming02/sd-forge-couple) | ❌ | ✔️ | ✔️ | ❌ | ❌ |

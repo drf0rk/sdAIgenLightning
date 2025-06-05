@@ -51,7 +51,7 @@ def read_model_data(file_path, data_type):
 
 webui_selection = {
     'A1111':   "--xformers --no-half-vae",
-    'ComfyUI': "--dont-print-server --preview-method auto --use-pytorch-cross-attention",
+    'ComfyUI': "--use-sage-attention --dont-print-server",
     'Forge':   "--disable-xformers --opt-sdp-attention --cuda-stream --pin-shared-memory",
     'Classic': "--persistent-patches --cuda-stream --pin-shared-memory",    # Remove: --xformers
     'ReForge': "--xformers --cuda-stream --pin-shared-memory",
@@ -162,7 +162,7 @@ custom_download_header_popup = factory.create_html('''
 empowerment_widget = factory.create_checkbox('Расширение возможностей', False, class_names=['empowerment'])
 empowerment_output_widget = factory.create_textarea(
 '', '', """Используйте специальные теги. Портативный аналог "Файл (txt)"
-Теги: model (ckpt), vae, lora, embed (emb), extension (ext), adetailer (ad), control (cnet), upscale (ups), clip, unet, vision, encoder (enc), diffusion (diff), config (cfg)
+Теги: model (ckpt), vae, lora, embed (emb), extension (ext), adetailer (ad), control (cnet), upscale (ups), clip, unet, vision (vis), encoder (enc), diffusion (diff), config (cfg)
 Короткие-теги: начинаются с '$' без пробела -> $ckpt
 ------ Например ------
 

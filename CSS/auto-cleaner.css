@@ -135,7 +135,7 @@ hr {
 /* Layout for selection and output areas */
 .selection_output_layout {
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between;
     gap: 5px;
     align-items: stretch;
 }

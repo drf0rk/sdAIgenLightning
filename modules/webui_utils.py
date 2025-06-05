@@ -13,15 +13,15 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 
 WEBUI_PATHS = {
     'A1111': (
-        'Stable-diffusion', 'VAE', 'Lora', 
+        'Stable-diffusion', 'VAE', 'Lora',
         'embeddings', 'extensions', 'ESRGAN', 'outputs'
     ),
     'ComfyUI': (
-        'checkpoints', 'vae', 'loras', 
+        'checkpoints', 'vae', 'loras',
         'embeddings', 'custom_nodes', 'upscale_models', 'output'
     ),
     'Classic': (
-        'Stable-diffusion', 'VAE', 'Lora', 
+        'Stable-diffusion', 'VAE', 'Lora',
         'embeddings', 'extensions', 'ESRGAN', 'output'
     )
 }

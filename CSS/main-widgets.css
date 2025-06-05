@@ -98,7 +98,7 @@ a {
     align-items: center;
 }
 
-/* Fix Checkbox Width */ 
+/* Fix Checkbox Width */
 .widget-checkbox {
     width: auto;
     display: inline-flex;

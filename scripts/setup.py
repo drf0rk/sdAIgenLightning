@@ -163,12 +163,12 @@ async def download_files_async(scr_path, lang, fork_user, fork_repo, branch, log
     files_structure = {
         'CSS': ['main-widgets.css', 'download-result.css', 'auto-cleaner.css'],
         'JS': ['main-widgets.js'],
-        'modules': ['json_utils.py', 'webui_utils.py', 'widget_factory.py', 
+        'modules': ['json_utils.py', 'webui_utils.py', 'widget_factory.py',
                    'TunnelHub.py', 'CivitaiAPI.py', 'Manager.py', '__season.py'],
         'scripts': {
             'UIs': ['A1111.py', 'ComfyUI.py', 'Forge.py', 'Classic.py', 'ReForge.py', 'SD-UX.py'],
             lang: [f"widgets-{lang}.py", f"downloading-{lang}.py"],
-            '': ['launch.py', 'auto-cleaner.py', 'download-result.py', 
+            '': ['launch.py', 'auto-cleaner.py', 'download-result.py',
                 '_models-data.py', '_xl-models-data.py']
         }
     }

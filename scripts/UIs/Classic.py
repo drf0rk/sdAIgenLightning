@@ -84,7 +84,7 @@ async def download_configuration():
         'https://github.com/anxety-solo/sd-civitai-browser-plus Civitai-Browser-Plus',
 
         ## Gutris1
-        'https://github.com/gutris1/sd-image-viewer Image-Viewer',
+        # 'https://github.com/gutris1/sd-image-viewer Image-Viewer',    # Not Working
         'https://github.com/gutris1/sd-image-info Image-Info',
         'https://github.com/gutris1/sd-hub SD-Hub',
 

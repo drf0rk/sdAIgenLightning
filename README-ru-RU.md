@@ -16,6 +16,7 @@
     <a href="https://www.kaggle.com/code/anxetysolo/sdaigen-ru-ipynb">
         <img src=".Docs/SVG/ru/kaggle-ru.svg" width="800" height="160" alt="kaggle">
     </a>
+    <h6>Дополнительные сведения о виджетах см. в разделе <a href="https://github.com/anxety-solo/sdAIgen/wiki/Widgets-ru-RU">WiKi</a>.</h6>
 </div>
 
 ## 🌟 Особенности:
@@ -24,7 +25,6 @@
   - Предустановленные пользовательские: *Настройки* + *Стили* + [*UI Тема*](https://github.com/anxety-solo/anxety-theme)
   - Скачивание превью для *моделей, LoRa и embedding* (CivitAi) | ***Для Kaggle есть ограничения.***
   - Выбор WebUI между *A1111*, *ComfyUI*, *Forge*, *Classic (Forge)*, *ReForge*, *SD-UX.*
-  - [Rentry Page](https://rentry.co/faq-sdAIgen-ru) → описание виджетов.
 
 <details>
 <summary>📚 Установленные Расширения</summary>
@@ -41,7 +41,7 @@
 | [ControlNet](https://github.com/Mikubill/sd-webui-controlnet) | ✔️ | 🔄 | 🔄 | 🔄 | ✔️ |
 | [Encrypt-Image](https://github.com/gutris1/sd-encrypt-image) | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> | ✔️<sup>†</sup> |
 | [Image-Info](https://github.com/gutris1/sd-image-info) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
-| [Image-Viewer](https://github.com/gutris1/sd-image-viewer) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+| [Image-Viewer](https://github.com/gutris1/sd-image-viewer) | ✔️ | ✔️ | ❌ | ✔️ | ✔️ |
 | [Infinite-Image-Browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing) | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 | [Regional-Prompter](https://github.com/hako-mikan/sd-webui-regional-prompter) | ✔️ | ❌ | ❌ | ✔️ | ✔️ |
 | [SD-Couple](https://github.com/Haoming02/sd-forge-couple) | ❌ | ✔️ | ✔️ | ❌ | ❌ |

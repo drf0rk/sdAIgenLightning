@@ -257,6 +257,7 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
           filter: blur(1px);
           opacity: 0;
           animation: snow-fall linear forwards;
+          pointer-events: none;
         }}
         @keyframes snow-fall {{
           0% {{ opacity: 0; transform: translate(-50%, -50%) scale(0); }}
@@ -266,12 +267,18 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
       `;
       document.head.appendChild(style);
 
+      let activeParticles = 0;
+      const maxParticles = 100;
+
       function createSnowflake() {{
+        if (activeParticles >= maxParticles) return;
+
         const snowflake = document.createElement('div');
         snowflake.className = 'snowflake';
         const size = Math.random() * 5 + 3;
         const x = Math.random() * 100;
         const duration = Math.random() * 3 + 2;
+
         snowflake.style.cssText = `
           width: ${{size}}px;
           height: ${{size}}px;
@@ -279,10 +286,26 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
           top: ${{Math.random() * 100}}%;
           animation: snow-fall ${{duration}}s linear forwards;
         `;
-        snowflake.addEventListener('animationend', () => snowflake.remove());
+
+        activeParticles++;
+        snowflake.addEventListener('animationend', () => {{
+          snowflake.remove();
+          activeParticles--;
+        }});
+
         container.appendChild(snowflake);
       }}
-      setInterval(createSnowflake, 50);
+
+      const interval = setInterval(createSnowflake, 50);
+
+      // Cleanup when container is removed
+      const observer = new MutationObserver(() => {{
+        if (!document.contains(container)) {{
+          clearInterval(interval);
+          observer.disconnect();
+        }}
+      }});
+      observer.observe(document.body, {{ childList: true, subtree: true }});
     }})();
     </script>
     """
@@ -312,20 +335,42 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
       `;
       document.head.appendChild(style);
 
+      let activeParticles = 0;
+      const maxParticles = 40;
+
       function createPetal() {{
+        if (activeParticles >= maxParticles) return;
+
         const petal = document.createElement('div');
         petal.className = 'petal';
         const startX = Math.random() * 100;
         const duration = Math.random() * 3 + 3;
+
         petal.style.cssText = `
           left: ${{startX}}%;
           top: ${{Math.random() * 100}}%;
           animation: spring-fall ${{duration}}s linear forwards;
         `;
-        petal.addEventListener('animationend', () => petal.remove());
+
+        activeParticles++;
+        petal.addEventListener('animationend', () => {{
+          petal.remove();
+          activeParticles--;
+        }});
+
         container.appendChild(petal);
       }}
-      setInterval(createPetal, 250);
+
+      const interval = setInterval(createPetal, 250);
+
+      // Cleanup when container is removed
+      const observer = new MutationObserver(() => {{
+        if (!document.contains(container)) {{
+          clearInterval(interval);
+          observer.disconnect();
+        }}
+      }});
+      observer.observe(document.body, {{ childList: true, subtree: true }});
     }})();
     </script>
     """
@@ -336,37 +381,61 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
       const container = document.querySelector('.season-container');
       const style = document.createElement('style');
       style.innerHTML = `
-        .sun-ray {{
+        .stick-particle {{
           position: absolute;
-          width: 3px;
-          height: 20px;
-          background: linear-gradient(to bottom, {config['particle_color']}, transparent);
-          transform-origin: bottom center;
+          width: 2px;
+          height: 15px;
+          background: {config['particle_color']};
+          transform-origin: center bottom;
           opacity: 0;
+          pointer-events: none;
         }}
-        @keyframes summer-shine {{
-          0%, 100% {{ opacity: 0; transform: rotate(var(--angle)) scale(0); }}
-          50% {{ opacity: 0.5; transform: rotate(var(--angle)) scale(1); }}
+        @keyframes stick-fall {{
+          0% {{ opacity: 0; transform: translate(-50%, -50%) rotate(0) scale(0.5); }}
+          20% {{ opacity: 0.8; transform: translate(-50%, -50%) rotate(0deg) scale(1); }}
+          100% {{ opacity: 0; transform: translate(-50%, 150%) rotate(180deg) scale(0.5); }}
         }}
       `;
       document.head.appendChild(style);
 
-      function createRay() {{
-        const ray = document.createElement('div');
-        ray.className = 'sun-ray';
-        const angle = Math.random() * 360;
-        const x = Math.random() * 100;
-        const y = Math.random() * 100;
-        const duration = Math.random() * 1 + 1;
-        ray.style.cssText = `
-          left: ${{x}}%;
-          top: ${{y}}%;
-          --angle: ${{angle}}deg;
-          animation: summer-shine ${{duration}}s ease-in-out infinite;
+      let activeParticles = 0;
+      const maxParticles = 25;
+
+      function createStick() {{
+        if (activeParticles >= maxParticles) return;
+
+        const stick = document.createElement('div');
+        stick.className = 'stick-particle';
+        const startX = Math.random() * 100;
+        const duration = Math.random() * 4 + 3;
+        const rotation = (Math.random() - 0.5) * 180;
+
+        stick.style.cssText = `
+          left: ${{startX}}%;
+          top: ${{Math.random() * 100}}%;
+          animation: stick-fall ${{duration}}s linear forwards;
+          transform: rotate(${{rotation}}deg);
         `;
-        container.appendChild(ray);
+
+        activeParticles++;
+        stick.addEventListener('animationend', () => {{
+          stick.remove();
+          activeParticles--;
+        }});
+
+        container.appendChild(stick);
       }}
-      setInterval(createRay, 650);
+
+      const interval = setInterval(createStick, 100);
+
+      // Cleanup when container is removed
+      const observer = new MutationObserver(() => {{
+        if (!document.contains(container)) {{
+          clearInterval(interval);
+          observer.disconnect();
+        }}
+      }});
+      observer.observe(document.body, {{ childList: true, subtree: true }});
     }})();
     </script>
     """
@@ -384,6 +453,7 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
           background: {config['particle_color']};
           clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
           opacity: 0;
+          pointer-events: none;
         }}
         @keyframes autumn-fall {{
           0% {{ opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }}
@@ -393,20 +463,42 @@ def display_info(env, scr_folder, branch, lang='en', fork=None):
       `;
       document.head.appendChild(style);
 
+      let activeParticles = 0;
+      const maxParticles = 40;
+
       function createLeaf() {{
+        if (activeParticles >= maxParticles) return;
+
         const leaf = document.createElement('div');
         leaf.className = 'leaf';
         const startX = Math.random() * 100;
         const duration = Math.random() * 3 + 3;
+
         leaf.style.cssText = `
           left: ${{startX}}%;
           top: ${{Math.random() * 100}}%;
           animation: autumn-fall ${{duration}}s linear forwards;
         `;
-        leaf.addEventListener('animationend', () => leaf.remove());
+
+        activeParticles++;
+        leaf.addEventListener('animationend', () => {{
+          leaf.remove();
+          activeParticles--;
+        }});
+
         container.appendChild(leaf);
       }}
-      setInterval(createLeaf, 250);
+
+      const interval = setInterval(createLeaf, 250);
+
+      // Cleanup when container is removed
+      const observer = new MutationObserver(() => {{
+        if (!document.contains(container)) {{
+          clearInterval(interval);
+          observer.disconnect();
+        }}
+      }});
+      observer.observe(document.body, {{ childList: true, subtree: true }});
     }})();
     </script>
     """
