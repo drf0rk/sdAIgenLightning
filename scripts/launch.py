@@ -146,8 +146,9 @@ PKG = str(VENV / 'lib/python3.10/site-packages')
 
 if BIN not in os.environ['PATH']:
     os.environ['PATH'] = BIN + ':' + os.environ['PATH']
-if PKG not in os.environ['PYTHONPATH']:
-    os.environ['PYTHONPATH'] = PKG + ':' + os.environ['PYTHONPATH']
+# Fix: Safely get PYTHONPATH, defaulting to empty string if not set
+if PKG not in os.environ.get('PYTHONPATH', ''):
+    os.environ['PYTHONPATH'] = PKG + ':' + os.environ.get('PYTHONPATH', '')
 
 
 ## ================ loading settings V5 ==================
@@ -475,6 +476,6 @@ if __name__ == '__main__':
         with open(f"{WEBUI}/static/timer.txt") as f:
             timer = float(f.read())
             duration = timedelta(seconds=time.time() - timer)
-            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\033[0m")
+            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\003[0m")
     except FileNotFoundError:
         pass
