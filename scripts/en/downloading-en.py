@@ -81,21 +81,9 @@ DOWNLOAD_CONFIG = get_download_config()
 os.makedirs(DOWNLOAD_CONFIG['base_path'], exist_ok=True)
 os.makedirs(DOWNLOAD_CONFIG['temp_path'], exist_ok=True)
 
-# Set up download paths (Updated to use DOWNLOAD_CONFIG)
-MODEL_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models'
-EXTENSION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'extensions'
-EMBEDDING_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'embeddings'
-LORA_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'lora'
-VAE_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'vae'
-CONTROLNET_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'controlnet'
-# These are added to match the config keys in webui_utils.py, ensure they are also created
-ADETAILER_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/adetailer'
-CLIP_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/text_encoder'
-UNET_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/unet'
-VISION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/clip_vision'
-ENCODER_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/text_encoders'
-DIFFUSION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/diffusion_models'
-CONFIG_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'user/default'
+# These will now be populated from settings.json's WEBUI paths after loading settings
+# Removed direct calculation based on DOWNLOAD_CONFIG['base_path'] here
+# MODEL_DIR, EXTENSION_DIR, etc.
 
 
 CD = os.chdir
@@ -256,6 +244,24 @@ locals().update(settings)
 # Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
 DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
 
+# Populate model/asset directories from settings.json
+# These paths are set by webui_utils.py based on the selected UI
+model_dir = Path(settings['WEBUI']['model_dir'])
+vae_dir = Path(settings['WEBUI']['vae_dir'])
+lora_dir = Path(settings['WEBUI']['lora_dir'])
+embed_dir = Path(settings['WEBUI']['embed_dir'])
+extension_dir = Path(settings['WEBUI']['extension_dir'])
+control_dir = Path(settings['WEBUI']['control_dir'])
+upscale_dir = Path(settings['WEBUI']['upscale_dir'])
+output_dir = Path(settings['WEBUI']['output_dir'])
+config_dir = Path(settings['WEBUI']['config_dir'])
+adetailer_dir = Path(settings['WEBUI']['adetailer_dir'])
+clip_dir = Path(settings['WEBUI']['clip_dir'])
+unet_dir = Path(settings['WEBUI']['unet_dir'])
+vision_dir = Path(settings['WEBUI']['vision_dir'])
+encoder_dir = Path(settings['WEBUI']['encoder_dir'])
+diffusion_dir = Path(settings['WEBUI']['diffusion_dir'])
+
 
 ## ======================== WEBUI ========================
 
@@ -351,15 +357,15 @@ if commit_hash:
 GD_BASE = str(DRIVE_PATH) # Use the dynamically determined DRIVE_PATH
 SYMLINK_CONFIG = [
     {   # model
-        'local_dir': MODEL_DIR, # Updated to use MODEL_DIR
+        'local_dir': model_dir, # Updated to use MODEL_DIR
         'gdrive_subpath': 'Checkpoints',
     },
     {   # vae
-        'local_dir': VAE_DIR, # Updated to use VAE_DIR
+        'local_dir': vae_dir, # Updated to use VAE_DIR
         'gdrive_subpath': 'VAE',
     },
     {   # lora
-        'local_dir': LORA_DIR, # Updated to use LORA_DIR
+        'local_dir': lora_dir, # Updated to use LORA_DIR
         'gdrive_subpath': 'Lora',
     }
 ]
@@ -417,21 +423,21 @@ print('📦 Downloading models and stuff...', end='')
 extension_repo = []
 PREFIX_MAP = {
     # prefix : (dir_path , short-tag)
-    'model': (MODEL_DIR, '$ckpt'), # Updated to use MODEL_DIR
-    'vae': (VAE_DIR, '$vae'),     # Updated to use VAE_DIR
-    'lora': (LORA_DIR, '$lora'),   # Updated to use LORA_DIR
-    'embed': (EMBEDDING_DIR, '$emb'), # Updated to use EMBEDDING_DIR
-    'extension': (EXTENSION_DIR, '$ext'), # Updated to use EXTENSION_DIR
-    'adetailer': (ADETAILER_DIR, '$ad'), # Updated to use ADETAILER_DIR
-    'control': (CONTROLNET_DIR, '$cnet'), # Updated to use CONTROLNET_DIR
-    'upscale': (Path(DOWNLOAD_CONFIG['base_path']) / 'models/upscale_models', '$ups'), # Assuming standard path
+    'model': (model_dir, '$ckpt'), # Updated to use MODEL_DIR
+    'vae': (vae_dir, '$vae'),     # Updated to use VAE_DIR
+    'lora': (lora_dir, '$lora'),   # Updated to use LORA_DIR
+    'embed': (embed_dir, '$emb'), # Updated to use EMBEDDING_DIR
+    'extension': (extension_dir, '$ext'), # Updated to use EXTENSION_DIR
+    'adetailer': (adetailer_dir, '$ad'), # Updated to use ADETAILER_DIR
+    'control': (control_dir, '$cnet'), # Updated to use CONTROLNET_DIR
+    'upscale': (upscale_dir, '$ups'), # Updated to use UPSCALE_DIR
     # Other
-    'clip': (CLIP_DIR, '$clip'),
-    'unet': (UNET_DIR, '$unet'),
-    'vision': (VISION_DIR, '$vis'),
-    'encoder': (ENCODER_DIR, '$enc'),
-    'diffusion': (DIFFUSION_DIR, '$diff'),
-    'config': (CONFIG_DIR, '$cfg')
+    'clip': (clip_dir, '$clip'),
+    'unet': (unet_dir, '$unet'),
+    'vision': (vision_dir, '$vis'),
+    'encoder': (encoder_dir, '$enc'),
+    'diffusion': (diffusion_dir, '$diff'),
+    'config': (config_dir, '$cfg')
 }
 for dir_path, _ in PREFIX_MAP.values():
     os.makedirs(dir_path, exist_ok=True)
@@ -484,7 +490,7 @@ def download_model_platform_aware(model_info):
     model_url = model_info['url']
 
     # Use platform-specific model directory
-    destination = MODEL_DIR / model_name
+    destination = model_dir / model_name
 
     print(f"📥 Downloading {model_name} to {destination}")
 
@@ -692,9 +698,9 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, in
     )
 
 line = ""
-line = handle_submodels(model, model_num, model_list, str(MODEL_DIR), line) # Updated dst_dir to use MODEL_DIR
-line = handle_submodels(vae, vae_num, vae_list, str(VAE_DIR), line)       # Updated dst_dir to use VAE_DIR
-line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(CONTROLNET_DIR), line) # Updated dst_dir to use CONTROLNET_DIR
+line = handle_submodels(model, model_num, model_list, str(model_dir), line) # Updated dst_dir to use MODEL_DIR from settings
+line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)       # Updated dst_dir to use VAE_DIR from settings
+line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line) # Updated dst_dir to use CONTROL_DIR from settings
 
 ''' File.txt - added urls '''
 
@@ -793,7 +799,7 @@ if extension_repo:
     print(f"✨ Installing custom {extension_type}...", end='')
     with capture.capture_output():
         for repo, repo_name in extension_repo:
-            _clone_repository(repo, repo_name, str(EXTENSION_DIR)) # Updated to use EXTENSION_DIR
+            _clone_repository(repo, repo_name, str(extension_dir)) # Updated to use extension_dir from settings
     print(f"\r📦 Installed '{len(extension_repo)}' custom {extension_type}!")
 
 
@@ -802,14 +808,14 @@ if extension_repo:
 if UI == 'ComfyUI':
     dirs = {'segm': '-seg.pt', 'bbox': None}
     for d in dirs:
-        os.makedirs(os.path.join(str(ADETAILER_DIR), d), exist_ok=True) # Updated to use ADETAILER_DIR
+        os.makedirs(os.path.join(str(adetailer_dir), d), exist_ok=True) # Updated to use adetailer_dir from settings
 
-    for filename in os.listdir(str(ADETAILER_DIR)): # Updated to use ADETAILER_DIR
-        src = os.path.join(str(ADETAILER_DIR), filename) # Updated to use ADETAILER_DIR
+    for filename in os.listdir(str(adetailer_dir)): # Updated to use adetailer_dir from settings
+        src = os.path.join(str(adetailer_dir), filename) # Updated to use adetailer_dir from settings
 
         if os.path.isfile(src) and filename.endswith('.pt'):
             dest_dir = 'segm' if filename.endswith('-seg.pt') else 'bbox'
-            dest = os.path.join(str(ADETAILER_DIR), dest_dir, filename) # Updated to use ADETAILER_DIR
+            dest = os.path.join(str(adetailer_dir), dest_dir, filename) # Updated to use adetailer_dir from settings
 
             if os.path.exists(dest):
                 os.remove(src)
