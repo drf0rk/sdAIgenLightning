@@ -53,6 +53,10 @@ def _set_webui_paths(ui):
     models_root = SHARED_MODEL_BASE 
     os.makedirs(models_root, exist_ok=True) # Ensure shared base exists
 
+    # Fix: Define is_comfy and is_classic before their first use
+    is_comfy = selected_ui == 'ComfyUI'
+    is_classic = selected_ui == 'Classic'
+
     # Get path components for selected UI (these are now mostly logical names)
     paths = WEBUI_PATHS[selected_ui]
     checkpoint_subdir, vae_subdir, lora_subdir, embed_subdir, extension_subdir, upscale_subdir, output_subdir = paths
