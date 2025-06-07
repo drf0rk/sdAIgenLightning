@@ -234,7 +234,7 @@ def load_settings(path):
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
 
-# --- START OF MODIFICATION ---
+# --- START OF MODIFICATION (Previously Added) ---
 # Force update WEBUI paths based on current UI selection.
 # This ensures that model_dir, vae_dir, etc., are correctly pointing to the shared location
 # before any downloads happen, regardless of widget interaction.
@@ -244,7 +244,7 @@ _set_webui_paths(UI)
 # Re-load settings after forcing _set_webui_paths to ensure the latest paths are used.
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
-# --- END OF MODIFICATION ---
+# --- END OF MODIFICATION (Previously Added) ---
 
 
 # Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
@@ -575,10 +575,10 @@ def _process_download_link(link):
 
 def download(line):
     """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    for link in filter(None, map(str.strip, line.split(','))):
-        prefix, url, filename = _process_download_link(link)
+    for link_entry in filter(None, re.split(r',\s*', line)): # Use link_entry as the full string
+        prefix, url, filename = _process_download_link(link_entry) # Here 'url' is the clean URL part if prefixed, or the full link_entry otherwise
 
-        if prefix:
+        if prefix: # This means it was a "prefix:URL[filename]" format
             dir_path, _ = PREFIX_MAP[prefix]
             if prefix == 'extension':
                 extension_repo.append((url, filename))
@@ -586,10 +586,28 @@ def download(line):
             try:
                 manual_download(url, dir_path, filename, prefix)
             except Exception as e:
-                print(f"\n> Download error: {e}")
-        else:
-            url, dst_dir, file_name = url.split()
-            manual_download(url, dst_dir, file_name)
+                print(f"\n> Download error for prefixed link '{link_entry}': {e}")
+        else: # Not a prefixed link, assume it's "url dst_dir filename" format, or just a raw URL
+            parts = link_entry.split() # Split the original link_entry here
+            if len(parts) >= 3:
+                # Format: "url dst_dir filename"
+                url_to_download = parts[0]
+                dst_dir_path = Path(parts[1])
+                file_name_explicit = parts[2]
+                try:
+                    manual_download(url_to_download, dst_dir_path, file_name_explicit)
+                except Exception as e:
+                    print(f"\n> Download error for explicit link '{link_entry}': {e}")
+            elif len(parts) == 1: # Just a raw URL provided without explicit destination or name
+                url_to_download = parts[0]
+                default_dst_dir = model_dir # Fallback to model_dir for raw URLs
+                default_file_name = _extract_filename(url_to_download)
+                try:
+                    manual_download(url_to_download, default_dst_dir, default_file_name)
+                except Exception as e:
+                    print(f"\n> Download error for raw URL '{link_entry}': {e}")
+            else:
+                print(f"\n> Skipping invalid link format: '{link_entry}'")
 
     _unpack_zips()
 
@@ -818,4 +836,3 @@ if UI == 'ComfyUI':
 
 ## List Models and stuff
 ipyRun('run', f"{SCRIPTS}/download-result.py")
-
