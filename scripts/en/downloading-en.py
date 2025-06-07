@@ -21,16 +21,91 @@ import json
 import sys
 import re
 import os
+from tqdm import tqdm # Added for new download functions
+
+
+# Platform-aware downloading configuration
+PLATFORM = os.environ.get('DETECTED_PLATFORM', 'local')
+
+def get_download_config():
+    """Get platform-specific download settings"""
+    if PLATFORM == 'lightning':
+        return {
+            'base_path': '/teamspace/studios/this_studio',
+            'temp_path': '/tmp/sdaigen',
+            'max_concurrent': 2,        # Conservative for Lightning AI
+            'chunk_size': 1024 * 1024,  # 1MB chunks
+            'timeout': 300,
+            'retries': 3,
+            'verify_ssl': True,
+            'use_aria2': False          # Avoid additional dependencies
+        }
+    elif PLATFORM == 'colab':
+        return {
+            'base_path': '/content',
+            'temp_path': '/tmp',
+            'max_concurrent': 4,
+            'chunk_size': 8 * 1024 * 1024,  # 8MB chunks
+            'timeout': 600,
+            'retries': 2,
+            'verify_ssl': True,
+            'use_aria2': True
+        }
+    elif PLATFORM == 'kaggle':
+        return {
+            'base_path': '/kaggle/working',
+            'temp_path': '/kaggle/tmp',
+            'max_concurrent': 3,
+            'chunk_size': 4 * 1024 * 1024,  # 4MB chunks
+            'timeout': 450,
+            'retries': 2,
+            'verify_ssl': True,
+            'use_aria2': False
+        }
+    else:
+        return {
+            'base_path': os.getcwd(),
+            'temp_path': './temp',
+            'max_concurrent': 4,
+            'chunk_size': 8 * 1024 * 1024,
+            'timeout': 600,
+            'retries': 2,
+            'verify_ssl': True,
+            'use_aria2': False
+        }
+
+# Apply configuration
+DOWNLOAD_CONFIG = get_download_config()
+
+# Ensure directories exist
+os.makedirs(DOWNLOAD_CONFIG['base_path'], exist_ok=True)
+os.makedirs(DOWNLOAD_CONFIG['temp_path'], exist_ok=True)
+
+# Set up download paths (Updated to use DOWNLOAD_CONFIG)
+MODEL_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models'
+EXTENSION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'extensions'
+EMBEDDING_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'embeddings'
+LORA_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'lora'
+VAE_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'vae'
+CONTROLNET_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'controlnet'
+# These are added to match the config keys in webui_utils.py, ensure they are also created
+ADETAILER_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/adetailer'
+CLIP_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/text_encoder'
+UNET_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/unet'
+VISION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/clip_vision'
+ENCODER_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/text_encoders'
+DIFFUSION_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'models/diffusion_models'
+CONFIG_DIR = Path(DOWNLOAD_CONFIG['base_path']) / 'user/default'
 
 
 CD = os.chdir
 ipySys = get_ipython().system
 ipyRun = get_ipython().run_line_magic
 
-# Constants
-HOME = Path.home()
-VENV = HOME / 'venv'
-SCR_PATH = Path(HOME / 'ANXETY')
+# Constants (updated to use the new DOWNLOAD_CONFIG paths where applicable)
+HOME = Path(DOWNLOAD_CONFIG['base_path'])
+VENV = Path(DOWNLOAD_CONFIG['base_path']) / 'venv' # Assuming venv is usually inside base_path
+SCR_PATH = Path(HOME / 'ANXETY') # Assuming ANXETY scripts are always relative to HOME
 SCRIPTS = SCR_PATH / 'scripts'
 SETTINGS_PATH = SCR_PATH / 'settings.json'
 
@@ -181,14 +256,15 @@ locals().update(settings)
 
 ## ======================== WEBUI ========================
 
-if UI in ['A1111', 'SD-UX'] and not os.path.exists('/root/.cache/huggingface/hub/models--Bingsu--adetailer'):
+if UI in ['A1111', 'SD-UX'] and not os.path.exists(Path(HOME) / '.cache/huggingface/hub/models--Bingsu--adetailer'): # Updated path
     print('🚚 Unpacking ADetailer model cache...')
 
     name_zip = 'hf_cache_adetailer'
     chache_url = 'https://huggingface.co/NagisaNao/ANXETY/resolve/main/hf_chache_adetailer.zip'
 
     zip_path = f"{HOME}/{name_zip}.zip"
-    m_download(f"{chache_url} {HOME} {name_zip}")
+    # Using the new platform-aware download function
+    download_file_platform_aware(chache_url, Path(zip_path))
     ipySys(f"unzip -q -o {zip_path} -d /")
     ipySys(f"rm -rf {zip_path}")
 
@@ -249,7 +325,7 @@ if latest_webui or latest_extensions:
 # === FIXING EXTENSIONS ===
 with capture.capture_output():
     # --- Umi-Wildcard ---
-    ipySys("sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
+    ipySys(f"sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
 
 
 ## Version switching
@@ -265,22 +341,23 @@ if commit_hash:
 
 
 # === Google Drive Mounting | EXCLUSIVE for Colab ===
+# This section remains largely as is, as setup.py is now handling the core GDrive/Storage setup
 from google.colab import drive
 mountGDrive = js.read(SETTINGS_PATH, 'mountGDrive')  # Mount/unmount flag
 
 # Configuration
-GD_BASE = "/content/drive/MyDrive/sdAIgen"
+GD_BASE = str(DRIVE_PATH) # Use the dynamically determined DRIVE_PATH
 SYMLINK_CONFIG = [
     {   # model
-        'local_dir': model_dir,
+        'local_dir': MODEL_DIR, # Updated to use MODEL_DIR
         'gdrive_subpath': 'Checkpoints',
     },
     {   # vae
-        'local_dir': vae_dir,
+        'local_dir': VAE_DIR, # Updated to use VAE_DIR
         'gdrive_subpath': 'VAE',
     },
     {   # lora
-        'local_dir': lora_dir,
+        'local_dir': LORA_DIR, # Updated to use LORA_DIR
         'gdrive_subpath': 'Lora',
     }
 ]
@@ -324,7 +401,7 @@ def create_symlink(src_path, gdrive_path, log=False):
 def handle_gdrive(mount_flag, log=False):
     """Main handler for Google Drive mounting and symlink management"""
     if mount_flag:
-        if os.path.exists("/content/drive/MyDrive"):
+        if os.path.exists(str(DRIVE_PATH)): # Using DRIVE_PATH which is now set by setup_storage
             print("🎉 Google Drive is connected~")
         else:
             try:
@@ -361,7 +438,7 @@ def handle_gdrive(mount_flag, log=False):
         subprocess.run(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     else:
-        if os.path.exists("/content/drive/MyDrive"):
+        if os.path.exists(str(DRIVE_PATH)): # Using DRIVE_PATH
             try:
                 print("⏳ Unmounting Google Drive...", end='')
                 with capture.capture_output():
@@ -395,24 +472,84 @@ print('📦 Downloading models and stuff...', end='')
 extension_repo = []
 PREFIX_MAP = {
     # prefix : (dir_path , short-tag)
-    'model': (model_dir, '$ckpt'),
-    'vae': (vae_dir, '$vae'),
-    'lora': (lora_dir, '$lora'),
-    'embed': (embed_dir, '$emb'),
-    'extension': (extension_dir, '$ext'),
-    'adetailer': (adetailer_dir, '$ad'),
-    'control': (control_dir, '$cnet'),
-    'upscale': (upscale_dir, '$ups'),
+    'model': (MODEL_DIR, '$ckpt'), # Updated to use MODEL_DIR
+    'vae': (VAE_DIR, '$vae'),     # Updated to use VAE_DIR
+    'lora': (LORA_DIR, '$lora'),   # Updated to use LORA_DIR
+    'embed': (EMBEDDING_DIR, '$emb'), # Updated to use EMBEDDING_DIR
+    'extension': (EXTENSION_DIR, '$ext'), # Updated to use EXTENSION_DIR
+    'adetailer': (ADETAILER_DIR, '$ad'), # Updated to use ADETAILER_DIR
+    'control': (CONTROLNET_DIR, '$cnet'), # Updated to use CONTROLNET_DIR
+    'upscale': (Path(DOWNLOAD_CONFIG['base_path']) / 'models/upscale_models', '$ups'), # Assuming standard path
     # Other
-    'clip': (clip_dir, '$clip'),
-    'unet': (unet_dir, '$unet'),
-    'vision': (vision_dir, '$vis'),
-    'encoder': (encoder_dir, '$enc'),
-    'diffusion': (diffusion_dir, '$diff'),
-    'config': (config_dir, '$cfg')
+    'clip': (CLIP_DIR, '$clip'),
+    'unet': (UNET_DIR, '$unet'),
+    'vision': (VISION_DIR, '$vis'),
+    'encoder': (ENCODER_DIR, '$enc'),
+    'diffusion': (DIFFUSION_DIR, '$diff'),
+    'config': (CONFIG_DIR, '$cfg')
 }
 for dir_path, _ in PREFIX_MAP.values():
     os.makedirs(dir_path, exist_ok=True)
+
+
+# New platform-aware download functions as per comprehensive_patches.md
+def download_file_platform_aware(url, destination, description="Downloading"):
+    """Platform-aware file download with optimizations"""
+    import requests
+    from tqdm import tqdm
+
+    config = DOWNLOAD_CONFIG
+
+    try:
+        # Create destination directory
+        Path(destination).parent.mkdir(parents=True, exist_ok=True)
+
+        # Download with platform-specific settings
+        response = requests.get(
+            url,
+            stream=True,
+            timeout=config['timeout'],
+            verify=config['verify_ssl']
+        )
+        response.raise_for_status()
+
+        total_size = int(response.headers.get('content-length', 0))
+
+        with open(destination, 'wb') as file, tqdm(
+            desc=description,
+            total=total_size,
+            unit='B',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as progress_bar:
+            for chunk in response.iter_content(chunk_size=config['chunk_size']):
+                if chunk:
+                    file.write(chunk)
+                    progress_bar.update(len(chunk))
+
+        return True
+
+    except Exception as e:
+        print(f"Download failed: {e}")
+        return False
+
+def download_model_platform_aware(model_info):
+    """Download model with platform-specific optimizations"""
+    model_name = model_info['name']
+    model_url = model_info['url']
+
+    # Use platform-specific model directory
+    destination = MODEL_DIR / model_name
+
+    print(f"📥 Downloading {model_name} to {destination}")
+
+    if download_file_platform_aware(model_url, destination, f"Downloading {model_name}"):
+        print(f"✅ Successfully downloaded {model_name}")
+        return True
+    else:
+        print(f"❌ Failed to download {model_name}")
+        return False
+
 
 ''' Formatted Info Output '''
 
@@ -436,7 +573,7 @@ def format_output(url, dst_dir, file_name, image_url=None, image_name=None):
     print(f"{COL.Y}{'SAVE DIR:':<12}{COL.B}{dst_dir}")
     print(f"{COL.Y}{'FILE NAME:':<12}{COL.B}{file_name}{COL.X}")
     if 'civitai' in url and image_url:
-        print(f"{COL.G}{'[Preview]:':<12}{COL.X}{image_name} → {image_url}")
+        print(f"{COL.G}{'[Preview]:<12}{COL.X}{image_name} → {image_url}")
     print()
 
 ''' Main Download Code '''
@@ -466,7 +603,7 @@ def _unpack_zips():
                 zf.extractall(zip_file.with_suffix(''))
             zip_file.unlink()
 
-# Download Core
+# Download Core (Modified to use new platform-aware download functions)
 
 def _process_download_link(link):
     """Processes a download link, splitting prefix, URL, and filename."""
@@ -488,15 +625,26 @@ def download(line):
                 extension_repo.append((url, filename))
                 continue
             try:
-                manual_download(url, dir_path, filename, prefix)
+                # Use the new platform-aware download function for direct file downloads
+                if not download_file_platform_aware(url, Path(dir_path) / filename if filename else Path(dir_path) / Path(url).name, f"Downloading {filename or Path(url).name}"):
+                    print(f"\n> Download error for {url}")
             except Exception as e:
                 print(f"\n> Download error: {e}")
         else:
-            url, dst_dir, file_name = url.split()
-            manual_download(url, dst_dir, file_name)
+            url_parts = url.split()
+            if len(url_parts) >= 2:
+                url_to_download = url_parts[0]
+                dst_dir = Path(url_parts[1])
+                file_name = url_parts[2] if len(url_parts) >= 3 else None
+                # Use the new platform-aware download function for direct file downloads
+                if not download_file_platform_aware(url_to_download, dst_dir / file_name if file_name else dst_dir / Path(url_to_download).name, f"Downloading {file_name or Path(url_to_download).name}"):
+                    print(f"\n> Download error for {url_to_download}")
+            else:
+                print(f"\n> Skipping invalid download link: {url}")
 
     _unpack_zips()
 
+# manual_download function is updated to use download_file_platform_aware internally
 def manual_download(url, dst_dir, file_name=None, prefix=None):
     clean_url = url
     image_url, image_name = None, None
@@ -510,9 +658,10 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
         clean_url, url = data.clean_url, data.download_url          # Clean_URL, URL
         image_url, image_name = data.image_url, data.image_name     # Img_URL, Img_Name
 
-        # Download preview images
+        # Download preview images using the new platform-aware function
         if image_url and image_name:
-            m_download(f"{image_url} {dst_dir} {image_name}")
+            if not download_file_platform_aware(image_url, Path(dst_dir) / image_name, f"Downloading preview {image_name}"):
+                print(f"Failed to download preview image {image_url}")
 
     elif any(s in url for s in ('github', 'huggingface.co')):
         if file_name and '.' not in file_name:
@@ -521,8 +670,10 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
     # Formatted info output
     format_output(clean_url, dst_dir, file_name, image_url, image_name)
 
-    # Downloading
-    m_download(f"{url} {dst_dir} {file_name or ''}", log=True)
+    # Downloading using the new platform-aware function
+    if not download_file_platform_aware(url, Path(dst_dir) / file_name if file_name else Path(dst_dir) / Path(url).name, f"Downloading {file_name or Path(url).name}"):
+        print(f"Failed to download {url}")
+
 
 ''' SubModels - Added URLs '''
 
@@ -595,9 +746,9 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, in
     )
 
 line = ""
-line = handle_submodels(model, model_num, model_list, model_dir, line)
-line = handle_submodels(vae, vae_num, vae_list, vae_dir, line)
-line = handle_submodels(controlnet, controlnet_num, controlnet_list, control_dir, line)
+line = handle_submodels(model, model_num, model_list, str(MODEL_DIR), line) # Updated dst_dir to use MODEL_DIR
+line = handle_submodels(vae, vae_num, vae_list, str(VAE_DIR), line)       # Updated dst_dir to use VAE_DIR
+line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(CONTROLNET_DIR), line) # Updated dst_dir to use CONTROLNET_DIR
 
 ''' File.txt - added urls '''
 
@@ -696,7 +847,7 @@ if extension_repo:
     print(f"✨ Installing custom {extension_type}...", end='')
     with capture.capture_output():
         for repo, repo_name in extension_repo:
-            _clone_repository(repo, repo_name, extension_dir)
+            _clone_repository(repo, repo_name, str(EXTENSION_DIR)) # Updated to use EXTENSION_DIR
     print(f"\r📦 Installed '{len(extension_repo)}' custom {extension_type}!")
 
 
@@ -705,14 +856,14 @@ if extension_repo:
 if UI == 'ComfyUI':
     dirs = {'segm': '-seg.pt', 'bbox': None}
     for d in dirs:
-        os.makedirs(os.path.join(adetailer_dir, d), exist_ok=True)
+        os.makedirs(os.path.join(str(ADETAILER_DIR), d), exist_ok=True) # Updated to use ADETAILER_DIR
 
-    for filename in os.listdir(adetailer_dir):
-        src = os.path.join(adetailer_dir, filename)
+    for filename in os.listdir(str(ADETAILER_DIR)): # Updated to use ADETAILER_DIR
+        src = os.path.join(str(ADETAILER_DIR), filename) # Updated to use ADETAILER_DIR
 
         if os.path.isfile(src) and filename.endswith('.pt'):
             dest_dir = 'segm' if filename.endswith('-seg.pt') else 'bbox'
-            dest = os.path.join(adetailer_dir, dest_dir, filename)
+            dest = os.path.join(str(ADETAILER_DIR), dest_dir, filename) # Updated to use ADETAILER_DIR
 
             if os.path.exists(dest):
                 os.remove(src)
