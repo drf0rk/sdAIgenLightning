@@ -1,82 +1,64 @@
 # ~ widgets.py | by ANXETY ~
 
 from widget_factory import WidgetFactory        # WIDGETS
-from webui_utils import update_current_webui    # WEBUI
+from webui_utils import update_current_webui, SHARED_MODEL_BASE # WEBUI # Import SHARED_MODEL_BASE
 import json_utils as js                         # JSON
 
 import ipywidgets as widgets
 from pathlib import Path
 import os
 
-# Removed: import _loras_data - it will be loaded dynamically by read_model_data
-
-
 # Platform-aware widget configuration
 PLATFORM = os.environ.get('DETECTED_PLATFORM', 'local')
 
+# --- START OF MODIFICATION ---
 def get_platform_paths():
-    """Get platform-specific paths for widgets"""
+    """
+    Get platform-specific paths.
+    Model-related paths (models, vae, lora, embeddings, controlnet) will now
+    consistently refer to subdirectories within SHARED_MODEL_BASE.
+    Only UI-specific directories (like extensions, outputs) will be under the UI's base.
+    """
+    # Base path for the current studio instance
     if PLATFORM == 'lightning':
-        base = '/teamspace/studios/this_studio'
-        return {
-            'models': f'{base}/models',
-            'outputs': f'{base}/outputs',
-            'extensions': f'{base}/extensions',
-            'embeddings': f'{base}/embeddings',
-            'lora': f'{base}/lora',
-            'vae': f'{base}/vae',
-            'controlnet': f'{base}/controlnet',
-            'temp': '/tmp/sdaigen',
-            'cache': f'{base}/.cache'
-        }
+        base = Path('/teamspace/studios/this_studio')
     elif PLATFORM == 'colab':
-        return {
-            'models': '/content/models',
-            'outputs': '/content/outputs',
-            'extensions': '/content/extensions',
-            'embeddings': '/content/embeddings',
-            'lora': '/content/lora',
-            'vae': '/content/vae',
-            'controlnet': '/content/controlnet',
-            'temp': '/tmp',
-            'cache': '/content/.cache'
-        }
+        base = Path('/content')
     elif PLATFORM == 'kaggle':
-        base = '/kaggle/working'
-        return {
-            'models': f'{base}/models',
-            'outputs': f'{base}/outputs',
-            'extensions': f'{base}/extensions',
-            'embeddings': f'{base}/embeddings',
-            'lora': f'{base}/lora',
-            'vae': f'{base}/vae',
-            'controlnet': f'{base}/controlnet',
-            'temp': '/kaggle/tmp',
-            'cache': f'{base}/.cache'
-        }
+        base = Path('/kaggle/working')
     else:
-        import os
-        base = os.getcwd()
-        return {
-            'models': f'{base}/models',
-            'outputs': f'{base}/outputs',
-            'extensions': f'{base}/extensions',
-            'embeddings': f'{base}/embeddings',
-            'lora': f'{base}/lora',
-            'vae': f'{base}/vae',
-            'controlnet': f'{base}/controlnet',
-            'temp': f'{base}/temp',
-            'cache': f'{base}/.cache'
-        }
+        base = Path.cwd()
 
-# Get paths and create directories
+    return {
+        # Model-related directories should reference SHARED_MODEL_BASE
+        'models': SHARED_MODEL_BASE / 'Stable-diffusion',
+        'vae': SHARED_MODEL_BASE / 'vae',
+        'lora': SHARED_MODEL_BASE / 'Lora',
+        'embeddings': SHARED_MODEL_BASE / 'embeddings',
+        'controlnet': SHARED_MODEL_BASE / 'ControlNet',
+        'adetailer': SHARED_MODEL_BASE / 'adetailer', 
+        'clip': SHARED_MODEL_BASE / 'text_encoder', 
+        'unet': SHARED_MODEL_BASE / 'unet', 
+        'vision': SHARED_MODEL_BASE / 'clip_vision', 
+        'encoder': SHARED_MODEL_BASE / 'text_encoder', 
+        'diffusion': SHARED_MODEL_BASE / 'diffusion_models', 
+        'upscale': SHARED_MODEL_BASE / 'ESRGAN', 
+
+        # UI-specific directories (these are typically within the WebUI's own folder)
+        # Note: 'base' here means the root of the studio, not the specific UI's folder.
+        # The actual UI folder path (WEBUI) is determined later by settings.
+        # We ensure these paths are created, assuming they are general top-level dirs.
+        'outputs': base / 'outputs', 
+        'extensions_root': base / 'extensions', # This is where generic extensions might be cloned if not UI-specific
+        'config_root': base / 'config', # Generic config root
+        
+        # Temporary/Cache directories (often global or in /tmp)
+        'temp': Path('/tmp/sdaigen') if PLATFORM == 'lightning' else base / 'temp',
+        'cache': base / '.cache'
+    }
+
+# Get paths (not creating them here yet)
 PATHS = get_platform_paths()
-for path in PATHS.values():
-    os.makedirs(path, exist_ok=True)
-
-def get_model_path(model_type='models'):
-    """Get platform-specific model path"""
-    return PATHS.get(model_type, PATHS['models'])
 
 def get_platform_widget_settings():
     """Get platform-optimized widget settings"""
@@ -123,7 +105,6 @@ def get_platform_widget_settings():
 
 WIDGET_SETTINGS = get_platform_widget_settings()
 
-
 # Constants
 HOME = Path.home()
 SCR_PATH = Path(HOME / 'ANXETY')
@@ -136,6 +117,43 @@ CSS = SCR_PATH / 'CSS'
 JS = SCR_PATH / 'JS'
 widgets_css = CSS / 'main-widgets.css'
 widgets_js = JS / 'main-widgets.js'
+
+## --- Ensure all necessary directories exist (only for paths that are directly managed/created here) ---
+# This loop now explicitly creates only the paths returned by get_platform_paths().
+# It's crucial that SHARED_MODEL_BASE and its subdirectories are also explicitly created.
+# These paths are what determine your top-level folder structure.
+for path_key, path_obj in PATHS.items():
+    if path_obj: # Ensure path_obj is not empty/None
+        path_obj.mkdir(parents=True, exist_ok=True)
+
+
+# Explicitly ensure SHARED_MODEL_BASE itself exists
+SHARED_MODEL_BASE.mkdir(parents=True, exist_ok=True)
+
+# Update the settings.json with the definitive paths from this script
+# This ensures consistency for other scripts relying on settings.json
+js.save(SETTINGS_PATH, 'WEBUI.model_dir', str(PATHS['models']))
+js.save(SETTINGS_PATH, 'WEBUI.vae_dir', str(PATHS['vae']))
+js.save(SETTINGS_PATH, 'WEBUI.lora_dir', str(PATHS['lora']))
+js.save(SETTINGS_PATH, 'WEBUI.embed_dir', str(PATHS['embeddings']))
+js.save(SETTINGS_PATH, 'WEBUI.control_dir', str(PATHS['controlnet']))
+js.save(SETTINGS_PATH, 'WEBUI.adetailer_dir', str(PATHS['adetailer']))
+js.save(SETTINGS_PATH, 'WEBUI.clip_dir', str(PATHS['clip']))
+js.save(SETTINGS_PATH, 'WEBUI.unet_dir', str(PATHS['unet']))
+js.save(SETTINGS_PATH, 'WEBUI.vision_dir', str(PATHS['vision']))
+js.save(SETTINGS_PATH, 'WEBUI.encoder_dir', str(PATHS['encoder']))
+js.save(SETTINGS_PATH, 'WEBUI.diffusion_dir', str(PATHS['diffusion']))
+js.save(SETTINGS_PATH, 'WEBUI.upscale_dir', str(PATHS['upscale']))
+js.save(SETTINGS_PATH, 'WEBUI.output_dir', str(PATHS['outputs']))
+js.save(SETTINGS_PATH, 'WEBUI.extension_dir', str(PATHS['extensions_root']))
+js.save(SETTINGS_PATH, 'WEBUI.config_dir', str(PATHS['config_root']))
+
+
+# Re-load settings to ensure `model_dir`, `vae_dir` etc. are updated for the rest of this script's execution
+# This is crucial for the widgets to reflect the correct paths if they need to.
+settings = js.read(SETTINGS_PATH)
+locals().update(settings) # Re-populate locals with updated settings
+# --- END OF MODIFICATION ---
 
 
 ## ======================= WIDGETS =======================

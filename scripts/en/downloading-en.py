@@ -1,6 +1,6 @@
 # ~ download.py | by ANXETY ~
 
-from webui_utils import handle_setup_timer, _set_webui_paths # WEBUI # ADDED _set_webui_paths
+from webui_utils import handle_setup_timer, _set_webui_paths, SHARED_MODEL_BASE # WEBUI # ADDED _set_webui_paths, SHARED_MODEL_BASE
 from CivitaiAPI import CivitAiAPI             # CivitAI API
 from Manager import m_download                # Every Download
 import json_utils as js                       # JSON
@@ -23,6 +23,10 @@ import re
 import os 
 from tqdm import tqdm 
 
+
+# --- START OF MODIFICATION (Version Tracking) ---
+DOWNLOADER_VERSION = "2025.06.09.3_filename_deep_fix" # Example Version:YYYY.MM.DD.Iteration_Description
+# --- END OF MODIFICATION (Version Tracking) ---
 
 # Platform-aware downloading configuration
 PLATFORM = os.environ.get('DETECTED_PLATFORM', 'local')
@@ -95,7 +99,8 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 
 LANG = js.read(SETTINGS_PATH, 'ENVIRONMENT.lang')
 ENV_NAME = js.read(SETTINGS_PATH, 'ENVIRONMENT.env_name')
-UI = js.read(SETTINGS_PATH, 'WEBUI.current')
+# Provide a default value for UI if 'WEBUI.current' is not found or is None
+UI = js.read(SETTINGS_PATH, 'WEBUI.current', 'A1111') 
 WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path', str(HOME / 'webui')) 
 
 
@@ -110,6 +115,9 @@ class COLORS:
 
 COL = COLORS
 
+# --- START OF MODIFICATION (Version Display) ---
+print(f"✨ Downloader Version: {DOWNLOADER_VERSION}")
+# --- END OF MODIFICATION (Version Display) ---
 
 ## =================== LIBRARIES | VENV ==================
 
@@ -219,11 +227,8 @@ def load_settings(path):
     """Load settings from a JSON file."""
     try:
         return {
-            # Provide empty dict as default if 'ENVIRONMENT' is missing or not a dict
             **js.read(path, 'ENVIRONMENT', {}),
-            # Provide empty dict as default if 'WIDGETS' is missing or not a dict
             **js.read(path, 'WIDGETS', {}),
-            # Safely get 'WEBUI' section with a default empty dict
             **js.read(path, 'WEBUI', {})
         }
     except (json.JSONDecodeError, IOError) as e:
@@ -234,100 +239,73 @@ def load_settings(path):
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
 
-# --- START OF MODIFICATION (Previously Added) ---
 # Force update WEBUI paths based on current UI selection.
-# This ensures that model_dir, vae_dir, etc., are correctly pointing to the shared location
-# before any downloads happen, regardless of widget interaction.
 print(f"🔄 Ensuring WebUI paths are configured for {UI}...")
 _set_webui_paths(UI) 
 
 # Re-load settings after forcing _set_webui_paths to ensure the latest paths are used.
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
-# --- END OF MODIFICATION (Previously Added) ---
+
+
+# --- START OF MODIFICATION (Guaranteed Shared Paths) ---
+# Explicitly define model_dir, vae_dir, etc., based on SHARED_MODEL_BASE
+# This bypasses potential issues with settings.json not being fully written/read
+# at script startup or prior manual edits of settings.json.
+from webui_utils import SHARED_MODEL_BASE # Ensure SHARED_MODEL_BASE is imported and used here
+
+model_dir = SHARED_MODEL_BASE / 'Stable-diffusion'
+vae_dir = SHARED_MODEL_BASE / 'vae'
+lora_dir = SHARED_MODEL_BASE / 'Lora' # Assuming consistent naming under shared
+embed_dir = SHARED_MODEL_BASE / 'embeddings'
+control_dir = SHARED_MODEL_BASE / 'ControlNet'
+upscale_dir = SHARED_MODEL_BASE / 'ESRGAN' # Or appropriate shared upscale dir
+adetailer_dir = SHARED_MODEL_BASE / 'adetailer' # Or appropriate shared adetailer dir
+clip_dir = SHARED_MODEL_BASE / 'text_encoder' # Or appropriate shared clip dir
+unet_dir = SHARED_MODEL_BASE / 'unet'
+vision_dir = SHARED_MODEL_BASE / 'clip_vision'
+encoder_dir = SHARED_MODEL_BASE / 'text_encoder'
+diffusion_dir = SHARED_MODEL_BASE / 'diffusion_models'
+extension_dir = Path(WEBUI) / 'extensions' if UI != 'ComfyUI' else Path(WEBUI) / 'custom_nodes' # Handle UI-specific extension path
+config_dir = Path(WEBUI) / 'config' # Typically UI-specific
+
+# Ensure these shared directories exist
+for d_path in [model_dir, vae_dir, lora_dir, embed_dir, control_dir, upscale_dir, 
+               adetailer_dir, clip_dir, unet_dir, vision_dir, encoder_dir, diffusion_dir,
+               extension_dir, config_dir]:
+    d_path.mkdir(parents=True, exist_ok=True)
+
+# Update settings.json with these definitive paths as well, for consistency
+# This ensures other parts of the system and future runs are aware of the correct paths
+js.update(SETTINGS_PATH, 'WEBUI.model_dir', str(model_dir))
+js.update(SETTINGS_PATH, 'WEBUI.vae_dir', str(vae_dir))
+js.update(SETTINGS_PATH, 'WEBUI.lora_dir', str(lora_dir))
+js.update(SETTINGS_PATH, 'WEBUI.embed_dir', str(embed_dir))
+js.update(SETTINGS_PATH, 'WEBUI.control_dir', str(control_dir))
+js.update(SETTINGS_PATH, 'WEBUI.upscale_dir', str(upscale_dir))
+js.update(SETTINGS_PATH, 'WEBUI.adetailer_dir', str(adetailer_dir))
+js.update(SETTINGS_PATH, 'WEBUI.clip_dir', str(clip_dir))
+js.update(SETTINGS_PATH, 'WEBUI.unet_dir', str(unet_dir))
+js.update(SETTINGS_PATH, 'WEBUI.vision_dir', str(vision_dir))
+js.update(SETTINGS_PATH, 'WEBUI.encoder_dir', str(encoder_dir))
+js.update(SETTINGS_PATH, 'WEBUI.diffusion_dir', str(diffusion_dir))
+js.update(SETTINGS_PATH, 'WEBUI.extension_dir', str(extension_dir))
+js.update(SETTINGS_PATH, 'WEBUI.config_dir', str(config_dir))
+
+
+# Re-read webui_settings from JSON after updating it, to reflect potential ComfyUI-specific sub-paths if _set_webui_paths adjusted them.
+webui_settings = js.read(SETTINGS_PATH, 'WEBUI', {})
+# Update relevant variables again from the now definitely correct settings.json
+model_dir = Path(webui_settings.get('model_dir', str(model_dir)))
+vae_dir = Path(webui_settings.get('vae_dir', str(vae_dir)))
+lora_dir = Path(webui_settings.get('lora_dir', str(lora_dir)))
+embed_dir = Path(webui_settings.get('embed_dir', str(embed_dir)))
+control_dir = Path(webui_settings.get('control_dir', str(control_dir)))
+# --- END OF MODIFICATION (Guaranteed Shared Paths) ---
 
 
 # Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
-DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
-
-# Populate model/asset directories from settings.json (paths set by webui_utils.py)
-# Safely get the 'WEBUI' dictionary before accessing its keys
-webui_settings = settings.get('WEBUI', {})
-
-model_dir = Path(webui_settings.get('model_dir', str(HOME / 'models')))
-vae_dir = Path(webui_settings.get('vae_dir', str(HOME / 'vae')))
-lora_dir = Path(webui_settings.get('lora_dir', str(HOME / 'lora')))
-embed_dir = Path(webui_settings.get('embed_dir', str(HOME / 'embeddings')))
-extension_dir = Path(webui_settings.get('extension_dir', str(HOME / 'extensions')))
-control_dir = Path(webui_settings.get('control_dir', str(HOME / 'ControlNet')))
-upscale_dir = Path(webui_settings.get('upscale_dir', str(HOME / 'upscale_models')))
-output_dir = Path(webui_settings.get('output_dir', str(HOME / 'outputs')))
-config_dir = Path(webui_settings.get('config_dir', str(HOME / 'config')))
-adetailer_dir = Path(webui_settings.get('adetailer_dir', str(HOME / 'adetailer')))
-clip_dir = Path(webui_settings.get('clip_dir', str(HOME / 'clip')))
-unet_dir = Path(webui_settings.get('unet_dir', str(HOME / 'unet')))
-vision_dir = Path(webui_settings.get('vision_dir', str(HOME / 'vision')))
-encoder_dir = Path(webui_settings.get('encoder_dir', str(HOME / 'encoder')))
-diffusion_dir = Path(webui_settings.get('diffusion_dir', str(HOME / 'diffusion_models')))
-
-
-# NEW: Platform-aware download functions (moved here to ensure they are defined before first use)
-def download_file_platform_aware(url, destination, description="Downloading"):
-    """Platform-aware file download with optimizations"""
-    import requests
-    from tqdm import tqdm
-
-    config = DOWNLOAD_CONFIG
-
-    try:
-        # Create destination directory
-        Path(destination).parent.mkdir(parents=True, exist_ok=True)
-
-        # Download with platform-specific settings
-        response = requests.get(
-            url,
-            stream=True,
-            timeout=config['timeout'],
-            verify=config['verify_ssl']
-        )
-        response.raise_for_status()
-
-        total_size = int(response.headers.get('content-length', 0))
-
-        with open(destination, 'wb') as file, tqdm(
-            desc=description,
-            total=total_size,
-            unit='B',
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as progress_bar:
-            for chunk in response.iter_content(chunk_size=config['chunk_size']):
-                if chunk:
-                    file.write(chunk)
-                    progress_bar.update(len(chunk))
-
-        return True
-
-    except Exception as e:
-        print(f"Download failed: {e}")
-        return False
-
-def download_model_platform_aware(model_info):
-    """Download model with platform-specific optimizations"""
-    model_name = model_info['name']
-    model_url = model_info['url']
-
-    # Use platform-specific model directory
-    destination = model_dir / model_name
-
-    print(f"📥 Downloading {model_name} to {destination}")
-
-    if download_file_platform_aware(model_url, destination, f"Downloading {model_name}"):
-        print(f"✅ Successfully downloaded {model_name}")
-        return True
-    else:
-        print(f"❌ Failed to download {model_name}")
-        return False
+DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME))) # This is now less critical for model paths, but still used for GDrive mounting
 
 
 ## ======================== WEBUI ========================
@@ -340,7 +318,7 @@ if UI in ['A1111', 'SD-UX'] and not os.path.exists(Path(HOME) / '.cache/huggingf
 
     zip_path = f"{HOME}/{name_zip}.zip"
     # Using the new platform-aware download function
-    download_file_platform_aware(chache_url, Path(zip_path))
+    m_download(f"{chache_url} {HOME} {name_zip}.zip") # Using m_download as platform-aware is not defined here
     ipySys(f"unzip -q -o {zip_path} -d /")
     ipySys(f"rm -rf {zip_path}")
 
@@ -353,7 +331,7 @@ if not os.path.exists(WEBUI):
     print(f"⌚ Unpacking Stable Diffusion... | WEBUI: {COL.B}{UI}{COL.X}", end='')
 
     ipyRun('run', f"{SCRIPTS}/UIs/{UI}.py")
-    handle_setup_timer(WEBUI, start_timer)		# Setup timer (for timer-extensions)
+    handle_setup_timer(WEBUI, start_install)		# Setup timer (for timer-extensions)
 
     install_time = time.time() - start_install
     minutes, seconds = divmod(int(install_time), 60)
@@ -387,8 +365,8 @@ if latest_webui or latest_extensions:
     ## Update extensions
     if latest_extensions:
         print("Updating extensions...")
-        for entry in os.listdir(f"{WEBUI}/extensions"):
-            dir_path = f"{WEBUI}/extensions/{entry}"
+        for entry in os.listdir(str(extension_dir)):
+            dir_path = os.path.join(str(extension_dir), entry)
             if os.path.isdir(dir_path):
                 print(f"  Updating extension: {entry}")
                 subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
@@ -400,7 +378,8 @@ if latest_webui or latest_extensions:
 # === FIXING EXTENSIONS ===
 with capture.capture_output():
     # --- Umi-Wildcard ---
-    ipySys(f"sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
+    if os.path.exists(f"{WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py"):
+        ipySys(f"sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
 
 
 ## Version switching
@@ -534,7 +513,7 @@ def format_output(url, dst_dir, file_name, image_url=None, image_name=None):
     print(f"{COL.Y}{'SAVE DIR:':<12}{COL.B}{dst_dir}")
     print(f"{COL.Y}{'FILE NAME:':<12}{COL.B}{file_name}{COL.X}")
     if 'civitai' in url and image_url:
-        print(f"{COL.G}{'[Preview]:':<12}{COL.X}{image_name} → {image_url}")
+        print(f"{COL.G}{'[Preview]:<12}'}{COL.X}{image_name} → {image_url}")
     print()
 
 def _clean_url(url):
@@ -548,11 +527,30 @@ def _clean_url(url):
     return url
 
 def _extract_filename(url):
+    # Modified to be more robust for URLs with query parameters or fragments
     if match := re.search(r'\[(.*?)\]', url):
         return match.group(1)
-    if any(d in urlparse(url).netloc for d in ["civitai.com", "drive.google.com"]):
-        return None
-    return Path(urlparse(url).path).name
+    
+    parsed_url = urlparse(url)
+    base_name = Path(parsed_url.path).name
+    
+    # If it's a direct Civitai download API URL, try to get filename from headers
+    if 'civitai.com/api/download/models' in url:
+        try:
+            head_response = requests.head(url, allow_redirects=True, timeout=5)
+            if 'content-disposition' in head_response.headers:
+                fname_match = re.search(r'filename\*?=(?:UTF-8\'\')?([^;]+)', head_response.headers['content-disposition'])
+                if fname_match:
+                    return requests.utils.unquote(fname_match.group(1))
+        except requests.exceptions.RequestException:
+            pass # Continue to fallback if HEAD request fails
+
+    # Fallback to simple path extraction if no explicit filename or Civitai API header
+    if base_name:
+        return base_name.split('?')[0].split('#')[0] # Remove query params and fragments
+    
+    return None
+
 
 def _unpack_zips():
     """Recursively extract and delete all .zip files in PREFIX_MAP directories."""
@@ -565,78 +563,145 @@ def _unpack_zips():
 # Download Core
 
 def _process_download_link(link):
-    """Processes a download link, splitting prefix, URL, and filename."""
-    link = _clean_url(link)
-    if ':' in link:
-        prefix, path = link.split(':', 1)
-        if prefix in PREFIX_MAP:
-            return prefix, re.sub(r'\[.*?\]', '', path), _extract_filename(path)
-    return None, link, None
+    """Processes a download link, splitting prefix, URL, and filename.
+    Returns (prefix, url_cleaned, filename_extracted, original_dst_dir_str)
+    """
+    link_original = link # Keep original link for filename extraction if needed
+    
+    prefix = None
+    url_part = link
+    filename = None
+    original_dst_dir_str = None # This will store the explicit path if provided
 
-def download(line):
-    """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    for link_entry in filter(None, re.split(r',\s*', line)): # Use link_entry as the full string
-        prefix, url, filename = _process_download_link(link_entry) # Here 'url' is the clean URL part if prefixed, or the full link_entry otherwise
+    # Check for explicit filename in brackets FIRST (e.g. "url[filename]")
+    if match := re.search(r'\[(.*?)\]', link_original):
+        filename = match.group(1)
+        # Remove the [filename] part from the url_part
+        url_part = re.sub(r'\[.*?\]', '', link_original).strip()
 
-        if prefix: # This means it was a "prefix:URL[filename]" format
-            dir_path, _ = PREFIX_MAP[prefix]
-            if prefix == 'extension':
-                extension_repo.append((url, filename))
-                continue
+    # Then check for prefix (e.g., "model:http://...")
+    if ':' in url_part:
+        possible_prefix, remaining_url = url_part.split(':', 1)
+        if possible_prefix in PREFIX_MAP:
+            prefix = possible_prefix
+            url_part = remaining_url.strip()
+            # If a prefix is found, the destination directory is determined by PREFIX_MAP
+            original_dst_dir_str = str(PREFIX_MAP[prefix][0])
+        else:
+            # If it's a colon but not a known prefix (e.g., 'https:'), it's part of the URL
+            pass # url_part remains as is
+    
+    # If no prefix and no explicit filename in brackets, check for space-separated "url dir filename"
+    # This is for legacy/manual entries, not preferred for automated construction
+    parts_by_space = url_part.split()
+    if not prefix and len(parts_by_space) >= 2: # Check if it looks like "url dir" or "url dir file"
+        # Assuming the first part is URL, second is destination. Third is filename if exists.
+        url_part = parts_by_space[0]
+        original_dst_dir_str = parts_by_space[1]
+        if len(parts_by_space) >= 3 and filename is None: # Only take filename if not already extracted
+            filename = parts_by_space[2]
+
+    # Clean the URL part itself
+    url_part = _clean_url(url_part)
+
+    # If filename was still not determined, try to extract from the URL
+    if filename is None:
+        filename = _extract_filename(url_part)
+
+    return prefix, url_part, filename, original_dst_dir_str
+
+
+def download(download_items_list): # Renamed 'line' to 'download_items_list' for clarity
+    """Downloads files from structured download entries, processes prefixes, and unpacks zips post-download."""
+    # Ensure download_items_list is always an iterable
+    if isinstance(download_items_list, str):
+        # This branch handles cases where a string (comma-separated or single) might still be passed.
+        # This is a fallback and should ideally be avoided by ensuring `line_entries` is a list of dicts.
+        print("⚠️ Warning: 'download' function received a string. Converting to structured format.")
+        parsed_entries = []
+        for entry_str in filter(None, re.split(r',\s*', download_items_list)):
+            prefix, url_to_download, filename_for_download, explicit_dst_dir_str = _process_download_link(entry_str)
+            parsed_entries.append({
+                'url': url_to_download,
+                'dst_dir': Path(explicit_dst_dir_str) if explicit_dst_dir_str else model_dir, # Ensure Path object, fallback to model_dir
+                'file_name': filename_for_download,
+                'prefix': prefix # Keep prefix for extension handling
+            })
+        items_to_process = parsed_entries
+    else:
+        # This is the expected and preferred input: a list of dictionaries
+        items_to_process = download_items_list
+
+    for item in items_to_process:
+        url_to_download = item['url']
+        filename_for_download = item['file_name']
+        prefix = item.get('prefix') # Get prefix if available (e.g., for extensions)
+
+        # target_dir_path is already a Path object from handle_submodels / _process_lines
+        target_dir_path = item['dst_dir'] 
+        
+        if not isinstance(target_dir_path, Path): # Double-check type safety
+            target_dir_path = Path(target_dir_path)
+
+        if not target_dir_path.exists():
+            target_dir_path.mkdir(parents=True, exist_ok=True) # Ensure target dir exists
+
+        if prefix == 'extension': # Extensions are handled by cloning, not m_download
+            extension_repo.append((url_to_download, filename_for_download))
+        else:
             try:
-                manual_download(url, dir_path, filename, prefix)
+                # manual_download now only expects url, dst_dir (Path), filename
+                manual_download(url_to_download, target_dir_path, filename_for_download)
             except Exception as e:
-                print(f"\n> Download error for prefixed link '{link_entry}': {e}")
-        else: # Not a prefixed link, assume it's "url dst_dir filename" format, or just a raw URL
-            parts = link_entry.split() # Split the original link_entry here
-            if len(parts) >= 3:
-                # Format: "url dst_dir filename"
-                url_to_download = parts[0]
-                dst_dir_path = Path(parts[1])
-                file_name_explicit = parts[2]
-                try:
-                    manual_download(url_to_download, dst_dir_path, file_name_explicit)
-                except Exception as e:
-                    print(f"\n> Download error for explicit link '{link_entry}': {e}")
-            elif len(parts) == 1: # Just a raw URL provided without explicit destination or name
-                url_to_download = parts[0]
-                default_dst_dir = model_dir # Fallback to model_dir for raw URLs
-                default_file_name = _extract_filename(url_to_download)
-                try:
-                    manual_download(url_to_download, default_dst_dir, default_file_name)
-                except Exception as e:
-                    print(f"\n> Download error for raw URL '{link_entry}': {e}")
-            else:
-                print(f"\n> Skipping invalid link format: '{link_entry}'")
+                print(f"\n> Download error for link '{url_to_download}': {e}")
 
-    _unpack_zips()
+    _unpack_zips() # Unpack zips after all downloads
 
-def manual_download(url, dst_dir, file_name=None, prefix=None):
-    clean_url = url
+
+def manual_download(url, dst_dir, file_name=None): # Removed 'prefix' argument
+    clean_url_for_display = url 
     image_url, image_name = None, None
 
     if 'civitai' in url:
         api = CivitAiAPI(civitai_token)
-        if not (data := api.validate_download(url, file_name)):
+        # Pass the original file_name to validate_download, it might have been passed explicitly
+        if not (data := api.validate_download(url, file_name)): 
             return
 
-        model_type, file_name = data.model_type, data.model_name    # Type, name
-        clean_url, url = data.clean_url, data.download_url          # Clean_URL, URL
-        image_url, image_name = data.image_url, data.image_name     # Img_URL, Img_Name
+        model_type = data.model_type
+        # Prioritize data.model_name for file_name if available, otherwise use provided file_name
+        # This fixes the corruption as data.model_name should be clean
+        final_file_name = data.model_name if data.model_name else file_name 
+        clean_url_for_display, url = data.clean_url, data.download_url          
+        image_url, image_name = data.image_url, data.image.name     
 
         # Download preview images
         if image_url and image_name:
-            m_download(f"{image_url} {dst_dir} {image_name}")
+            # Ensure m_download receives correct destination Path object
+            m_download(f"{image_url} {str(dst_dir)} {image_name}")
 
     elif any(s in url for s in ('github', 'huggingface.co')):
-        if file_name and '.' not in file_name:
-            file_name += f".{clean_url.split('.')[-1]}"
+        # Ensure file_name has an extension if it's missing and we're dealing with a common URL type
+        final_file_name = file_name # Use provided file_name first
+        if final_file_name and '.' not in final_file_name:
+            # Use original clean_url_for_display to get extension before any modifications
+            url_ext = Path(urlparse(clean_url_for_display).path).suffix
+            if url_ext:
+                final_file_name += url_ext
+        elif not final_file_name: # If no file_name provided at all, derive from URL
+            final_file_name = _extract_filename(clean_url_for_display)
+
+    else: # Generic URL, no special handling, use provided file_name or derive
+        final_file_name = file_name if file_name else _extract_filename(clean_url_for_display)
+
 
     # Formatted info output
-    format_output(clean_url, dst_dir, file_name, image_url, image_name)
+    format_output(clean_url_for_display, dst_dir, final_file_name, image_url, image_name)
 
     # Downloading
-    m_download(f"{url} {dst_dir} {file_name or ''}", log=True)
+    # Ensure dst_dir is passed as a string path to m_download
+    m_download(f"{url} {str(dst_dir)} {final_file_name or ''}", log=True)
+
 
 ''' SubModels - Added URLs '''
 
@@ -678,7 +743,7 @@ def _parse_selection_numbers(num_str, max_num):
 
     return sorted(unique_numbers)
 
-def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, inpainting_model=False):
+def handle_submodels(selection, num_selection, model_dict, dst_dir_obj, inpainting_model=False): # Renamed dst_dir to dst_dir_obj for clarity
     selected = []
     if selection == "ALL":
         selected = sum(model_dict.values(), [])
@@ -697,21 +762,54 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, in
         name = model.get('name') or os.path.basename(model['url'])
         if not inpainting_model and "inpainting" in name:
             continue
+        # Use the dst_dir_obj from the function parameter, or model's own dst_dir if specified
         unique_models[name] = {
             'url': model['url'],
-            'dst_dir': model.get('dst_dir', dst_dir),
+            'dst_dir': model.get('dst_dir', str(dst_dir_obj)), # Ensure it's a string path here
             'name': name
         }
 
-    return base_url + ', '.join(
-        f"{m['url']} {m['dst_dir']} {m['name']}"
-        for m in unique_models.values()
-    )
+    # --- START OF MODIFICATION ---
+    # Return a list of explicit dictionaries for clarity and robust parsing
+    processed_models = []
+    for m in unique_models.values():
+        filename = m['name'] if m['name'] else _extract_filename(m['url'])
+        processed_models.append({
+            'url': m['url'],
+            'dst_dir': Path(m['dst_dir']), # Ensure Path object for consistency
+            'file_name': filename,
+            'prefix': 'model' if Path(m['dst_dir']) == model_dir else \
+                      ('vae' if Path(m['dst_dir']) == vae_dir else \
+                       ('lora' if Path(m['dst_dir']) == lora_dir else \
+                        ('control' if Path(m['dst_dir']) == control_dir else None))) # Add prefix for download
+        })
+    return processed_models # Return list of dictionaries
+    # --- END OF MODIFICATION ---
 
-line = ""
-line = handle_submodels(model, model_num, model_list, str(model_dir), line)
-line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
-line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
+# Initialize line_entries as an empty list to collect individual download entries
+line_entries = [] 
+line_entries.extend(handle_submodels(model, model_num, model_list, model_dir)) 
+line_entries.extend(handle_submodels(vae, vae_num, vae_list, vae_dir))
+line_entries.extend(handle_submodels(controlnet, controlnet_num, controlnet_list, control_dir))
+
+# New: Load _loras-data.py to make lora_data available
+try:
+    with open(f"{SCRIPTS}/_loras-data.py") as f:
+        lora_data_content = f.read()
+    exec(lora_data_content, globals(), globals()) 
+except FileNotFoundError:
+    print(f"Error: _loras-data.py not found at {SCRIPTS}/_loras-data.py. Please ensure it is downloaded.")
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} 
+except Exception as e:
+    print(f"Error loading _loras-data.py: {e}")
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} 
+
+# Determine which lora list to use based on XL_models setting
+lora_list_to_use = lora_data.get('sdxl_loras', {}) if XL_models else lora_data.get('sd15_loras', {})
+if not isinstance(lora_list_to_use, dict):
+    lora_list_to_use = {}
+
+line_entries.extend(handle_submodels(lora, lora_num, lora_list_to_use, lora_dir))
 
 ''' File.txt - added urls '''
 
@@ -745,14 +843,22 @@ def _process_lines(lines):
 
             if entry_key not in processed_entries:
                 filename = _extract_filename(url_entry)
-                formatted_url = f"{current_tag}:{clean_url}"
-                if filename:
-                    formatted_url += f"[{filename}]"
+                
+                # --- START OF MODIFICATION ---
+                # Return dictionary for consistency with handle_submodels output
+                target_dir = PREFIX_MAP.get(current_tag, (model_dir, ''))[0] # Fallback to model_dir
+                result_urls.append({
+                    'url': clean_url,
+                    'dst_dir': target_dir, # Ensure Path object
+                    'file_name': filename,
+                    'prefix': current_tag # Add prefix for consistency
+                })
+                # --- END OF MODIFICATION ---
 
-                result_urls.append(formatted_url)
                 processed_entries.add(entry_key)
 
-    return ', '.join(result_urls) if result_urls else ''
+    return result_urls # Return list of dictionaries
+
 
 def process_file_downloads(file_urls, additional_lines=None):
     """Reads URLs from files/HTTP sources."""
@@ -782,17 +888,40 @@ def process_file_downloads(file_urls, additional_lines=None):
 urls_sources = (Model_url, Vae_url, LoRA_url, Embedding_url, Extensions_url, ADetailer_url)
 file_urls = [f"{f}.txt" if not f.endswith('.txt') else f for f in custom_file_urls.replace(',', '').split()] if custom_file_urls else []
 
-# p -> prefix ; u -> url | Remember: don't touch the prefix!
-prefixed_urls = [f"{p}:{u}" for p, u in zip(PREFIX_MAP, urls_sources) if u for u in u.replace(',', '').split()]
-line += ', ' + ', '.join(prefixed_urls + [process_file_downloads(file_urls, empowerment_output)])
+# --- START OF MODIFICATION ---
+# Collect all file download entries into line_entries list
+filtered_prefixed_urls_as_dicts = []
+for idx, url_source in enumerate(urls_sources):
+    if url_source:
+        prefix_key = list(PREFIX_MAP.keys())[idx] 
+        target_dir = PREFIX_MAP[prefix_key][0] 
+
+        for single_url in url_source.replace(',', ' ').split():
+            if single_url: 
+                filename_from_url = _extract_filename(single_url)
+                clean_single_url = re.sub(r'\[.*?\]', '', single_url).strip()
+                
+                filtered_prefixed_urls_as_dicts.append({
+                    'url': clean_single_url,
+                    'dst_dir': target_dir, # Ensure Path object
+                    'file_name': filename_from_url,
+                    'prefix': prefix_key # Add prefix for consistency
+                })
+
+line_entries.extend(filtered_prefixed_urls_as_dicts)
+line_entries.extend(process_file_downloads(file_urls, empowerment_output))
+
+# The `download` function is now passed a list of dictionaries.
+# --- END OF MODIFICATION ---
+
 
 if detailed_download == 'on':
     print(f"\n\n{COL.Y}# ====== Detailed Download ====== #\n{COL.X}")
-    download(line)
+    download(line_entries) # Pass the list of dictionaries
     print(f"\n{COL.Y}# =============================== #\n{COL.X}")
 else:
     with capture.capture_output():
-        download(line)
+        download(line_entries) # Pass the list of dictionaries
 
 print('\r🏁 Download Complete!' + ' '*15)
 
