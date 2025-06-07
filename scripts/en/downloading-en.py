@@ -70,7 +70,6 @@ def get_download_config():
             'chunk_size': 8 * 1024 * 1024,
             'timeout': 600,
             'retries': 2,
-            'verify_ssl': True,
             'use_aria2': False
         }
 
@@ -166,10 +165,9 @@ def setup_venv(url):
     os.environ['PYTHONWARNINGS'] = 'ignore'
 
     sys.path.insert(0, PKG)
-    if BIN not in os.environ['PATH']:
-        os.environ['PATH'] = BIN + ':' + os.environ['PATH']
-    if PKG not in os.environ['PYTHONPATH']:
-        os.environ['PYTHONPATH'] = PKG + ':' + os.environ['PYTHONPATH']
+    # Fix: Safely get PYTHONPATH, defaulting to empty string if not set
+    if PKG not in os.environ.get('PYTHONPATH', ''):
+        os.environ['PYTHONPATH'] = PKG + ':' + os.environ.get('PYTHONPATH', '')
 
 def install_packages(install_lib):
     """Install packages from the provided library dictionary."""
