@@ -253,6 +253,10 @@ def load_settings(path):
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
 
+# Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
+DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
+
+
 ## ======================== WEBUI ========================
 
 if UI in ['A1111', 'SD-UX'] and not os.path.exists(Path(HOME) / '.cache/huggingface/hub/models--Bingsu--adetailer'): # Updated path
@@ -598,7 +602,7 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
 
         model_type, file_name = data.model_type, data.model_name    # Type, name
         clean_url, url = data.clean_url, data.download_url          # Clean_URL, URL
-        image_url, image_name = data.image_url, data.image_name     # Img_URL, Img_Name
+        image_url, image_name = data.image.url, data.image_name     # Img_URL, Img_Name
 
         # Download preview images using the new platform-aware function
         if image_url and image_name:
