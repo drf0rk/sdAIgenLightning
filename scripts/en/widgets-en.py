@@ -217,21 +217,19 @@ controlnet_widget = factory.create_dropdown(controlnet_options, 'ControlNet:', '
 controlnet_num_widget = factory.create_text('ControlNet Number:', '', 'Enter ControlNet numbers for download.')
 commit_hash_widget = factory.create_text('Commit Hash:', '', 'Switching between branches or commits.')
 
-civitai_token_widget = factory.create_text('CivitAI Token:', '', 'Enter your CivitAi API token.')
+# HARDCODED TOKENS START HERE
+civitai_token_widget = factory.create_text('CivitAI Token:', 'ff14ef326fa02885e8202e4d44fc9a13', 'Enter your CivitAi API token.')
 civitai_button = create_expandable_button('Get CivitAI Token', 'https://civitai.com/user/account')
 civitai_widget = factory.create_hbox([civitai_token_widget, civitai_button])
 
-huggingface_token_widget = factory.create_text('HuggingFace Token:')
+huggingface_token_widget = factory.create_text('HuggingFace Token:', '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')
 huggingface_button = create_expandable_button('Get HuggingFace Token', 'https://huggingface.co/settings/tokens')
 huggingface_widget = factory.create_hbox([huggingface_token_widget, huggingface_button])
 
-ngrok_token_widget = factory.create_text('Ngrok Token:')
+ngrok_token_widget = factory.create_text('Ngrok Token:', '2tjxIXifSaGR3dMhkvhk6sZqbGo_6ZfBZLZHMbtAjfRmfoDW5')
 ngrok_button = create_expandable_button('Get Ngrok Token', 'https://dashboard.ngrok.com/get-started/your-authtoken')
 ngrok_widget = factory.create_hbox([ngrok_token_widget, ngrok_button])
-
-zrok_token_widget = factory.create_text('Zrok Token:')
-zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU')
-zrok_widget = factory.create_hbox([zrok_token_widget, zrok_button])
+# HARDCODED TOKENS END HERE
 
 commandline_arguments_widget = factory.create_text('Arguments:', webui_selection['A1111'])
 
