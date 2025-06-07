@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 
 # --- START OF MODIFICATION (Version Tracking) ---
-DOWNLOADER_VERSION = "2025.06.09.1_structured_download_entries" # Example Version:YYYY.MM.DD.Iteration_Description
+DOWNLOADER_VERSION = "2025.06.09.3_filename_deep_fix" # Example Version:YYYY.MM.DD.Iteration_Description
 # --- END OF MODIFICATION (Version Tracking) ---
 
 # Platform-aware downloading configuration
@@ -604,39 +604,54 @@ def _process_download_link(link):
     return prefix, url_part, filename, original_dst_dir_str
 
 
-def download(line):
-    """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    for link_entry in filter(None, re.split(r',\s*', line)):
-        prefix, url_to_download, filename_for_download, explicit_dst_dir_str = _process_download_link(link_entry)
+def download(download_items_list): # Renamed 'line' to 'download_items_list' for clarity
+    """Downloads files from structured download entries, processes prefixes, and unpacks zips post-download."""
+    # Ensure download_items_list is always an iterable
+    if isinstance(download_items_list, str):
+        # This branch handles cases where a string (comma-separated or single) might still be passed.
+        # This is a fallback and should ideally be avoided by ensuring `line_entries` is a list of dicts.
+        print("⚠️ Warning: 'download' function received a string. Converting to structured format.")
+        parsed_entries = []
+        for entry_str in filter(None, re.split(r',\s*', download_items_list)):
+            prefix, url_to_download, filename_for_download, explicit_dst_dir_str = _process_download_link(entry_str)
+            parsed_entries.append({
+                'url': url_to_download,
+                'dst_dir': Path(explicit_dst_dir_str) if explicit_dst_dir_str else model_dir, # Ensure Path object, fallback to model_dir
+                'file_name': filename_for_download,
+                'prefix': prefix # Keep prefix for extension handling
+            })
+        items_to_process = parsed_entries
+    else:
+        # This is the expected and preferred input: a list of dictionaries
+        items_to_process = download_items_list
 
-        target_dir_path = None
-        if prefix:
-            target_dir_path, _ = PREFIX_MAP[prefix] # Get path from PREFIX_MAP for prefixed types
-        elif explicit_dst_dir_str: # If an explicit directory was provided in the string (e.g., "url /path/ filename")
-            target_dir_path = Path(explicit_dst_dir_str)
-        else: # Fallback for raw URLs with no prefix and no explicit directory in the string
-            # This case should ideally be avoided by robustly building `line_entries`
-            # For a raw URL, default to model_dir if no other info
-            target_dir_path = model_dir 
-            print(f"⚠️ Warning: No explicit destination for '{link_entry}'. Defaulting to {target_dir_path}")
+    for item in items_to_process:
+        url_to_download = item['url']
+        filename_for_download = item['file_name']
+        prefix = item.get('prefix') # Get prefix if available (e.g., for extensions)
 
-        if not target_dir_path:
-            print(f"❌ Error: Could not determine destination for '{link_entry}'. Skipping.")
-            continue
-            
-        if prefix == 'extension':
-            # For extensions, add to repo list for cloning later
+        # target_dir_path is already a Path object from handle_submodels / _process_lines
+        target_dir_path = item['dst_dir'] 
+        
+        if not isinstance(target_dir_path, Path): # Double-check type safety
+            target_dir_path = Path(target_dir_path)
+
+        if not target_dir_path.exists():
+            target_dir_path.mkdir(parents=True, exist_ok=True) # Ensure target dir exists
+
+        if prefix == 'extension': # Extensions are handled by cloning, not m_download
             extension_repo.append((url_to_download, filename_for_download))
         else:
-            # For models/VAEs/LoRAs etc., proceed with manual_download
             try:
-                manual_download(url_to_download, target_dir_path, filename_for_download, prefix)
+                # manual_download now only expects url, dst_dir (Path), filename
+                manual_download(url_to_download, target_dir_path, filename_for_download)
             except Exception as e:
-                print(f"\n> Download error for link '{link_entry}': {e}")
+                print(f"\n> Download error for link '{url_to_download}': {e}")
 
-    _unpack_zips()
+    _unpack_zips() # Unpack zips after all downloads
 
-def manual_download(url, dst_dir, file_name=None, prefix=None):
+
+def manual_download(url, dst_dir, file_name=None): # Removed 'prefix' argument
     clean_url_for_display = url 
     image_url, image_name = None, None
 
@@ -749,14 +764,17 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir_obj, inpainti
 
     # --- START OF MODIFICATION ---
     # Return a list of explicit dictionaries for clarity and robust parsing
-    # This aligns with the original intent of m_download expecting url, dst_dir, filename
     processed_models = []
     for m in unique_models.values():
         filename = m['name'] if m['name'] else _extract_filename(m['url'])
         processed_models.append({
             'url': m['url'],
             'dst_dir': Path(m['dst_dir']), # Ensure Path object for consistency
-            'file_name': filename
+            'file_name': filename,
+            'prefix': 'model' if Path(m['dst_dir']) == model_dir else \
+                      ('vae' if Path(m['dst_dir']) == vae_dir else \
+                       ('lora' if Path(m['dst_dir']) == lora_dir else \
+                        ('control' if Path(m['dst_dir']) == control_dir else None))) # Add prefix for download
         })
     return processed_models # Return list of dictionaries
     # --- END OF MODIFICATION ---
@@ -826,7 +844,8 @@ def _process_lines(lines):
                 result_urls.append({
                     'url': clean_url,
                     'dst_dir': target_dir, # Ensure Path object
-                    'file_name': filename
+                    'file_name': filename,
+                    'prefix': current_tag # Add prefix for consistency
                 })
                 # --- END OF MODIFICATION ---
 
@@ -865,7 +884,6 @@ file_urls = [f"{f}.txt" if not f.endswith('.txt') else f for f in custom_file_ur
 
 # --- START OF MODIFICATION ---
 # Collect all file download entries into line_entries list
-# Ensure the format is a list of dictionaries, consistent with handle_submodels
 filtered_prefixed_urls_as_dicts = []
 for idx, url_source in enumerate(urls_sources):
     if url_source:
@@ -880,15 +898,14 @@ for idx, url_source in enumerate(urls_sources):
                 filtered_prefixed_urls_as_dicts.append({
                     'url': clean_single_url,
                     'dst_dir': target_dir, # Ensure Path object
-                    'file_name': filename_from_url
+                    'file_name': filename_from_url,
+                    'prefix': prefix_key # Add prefix for consistency
                 })
 
 line_entries.extend(filtered_prefixed_urls_as_dicts)
 line_entries.extend(process_file_downloads(file_urls, empowerment_output))
 
-# The `line` variable is now a list of dictionaries, not a string.
-# The `download` function must be refactored to accept this list.
-# The `download` function's signature and internal loop are changed below.
+# The `download` function is now passed a list of dictionaries.
 # --- END OF MODIFICATION ---
 
 
