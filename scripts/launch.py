@@ -75,6 +75,10 @@ def detect_and_optimize_platform():
 
         print("⚡ Applied Lightning AI optimizations")
 
+        # Define SHARED_MODEL_BASE BEFORE it's used in the return statement
+        SHARED_MODEL_BASE = Path('/teamspace/studios/this_studio') / 'sd_models_shared'
+        os.makedirs(SHARED_MODEL_BASE, exist_ok=True) # Ensure shared base exists
+
         # Return Lightning AI launch arguments, explicitly adding --share
         return [
             '--xformers',
