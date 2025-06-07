@@ -21,6 +21,112 @@ import os
 import re
 
 
+# Universal platform detection and optimization
+def detect_and_optimize_platform():
+    """Detect platform and apply all necessary optimizations"""
+    import os
+    from pathlib import Path
+
+    # Get platform from environment or detect
+    platform = os.environ.get('DETECTED_PLATFORM', 'local')
+
+    if not platform or platform == 'local':
+        # Re-detect platform
+        try:
+            import google.colab
+            platform = 'colab'
+        except ImportError:
+            pass
+
+        if os.path.exists('/kaggle'):
+            platform = 'kaggle'
+        elif (os.environ.get('LIGHTNING_CLOUD_PROJECT_ID') or
+              os.environ.get('LIGHTNING_AI') or
+              os.path.exists('/teamspace') or
+              'lightning' in os.environ.get('PWD', '').lower() or
+              'studios' in os.environ.get('PWD', '').lower()):
+            platform = 'lightning'
+
+    # Set platform environment variable
+    os.environ['DETECTED_PLATFORM'] = platform
+    print(f"🔍 Platform detected: {platform}")
+
+    # Apply platform-specific optimizations
+    if platform == 'lightning':
+        # Lightning AI optimizations
+        optimizations = {
+            'PYTORCH_CUDA_ALLOC_CONF': 'max_split_size_mb:128',
+            'CUDA_LAUNCH_BLOCKING': '1',
+            'TMPDIR': '/tmp/sdaigen',
+            'TEMP': '/tmp/sdaigen',
+            'CUDA_VISIBLE_DEVICES': '0',  # Use first GPU only
+            # The PYTHONPATH setting needs to be handled carefully not to overwrite existing critical paths.
+            # It's better to append than replace if not explicitly needed.
+            # 'PYTHONPATH': '/teamspace/studios/this_studio:' + os.environ.get('PYTHONPATH', '')
+        }
+
+        for key, value in optimizations.items():
+            os.environ[key] = value
+
+        # Create temp directories
+        temp_dirs = ['/tmp/sdaigen', '/teamspace/studios/this_studio/temp']
+        for temp_dir in temp_dirs:
+            Path(temp_dir).mkdir(parents=True, exist_ok=True)
+
+        print("⚡ Applied Lightning AI optimizations")
+
+        # Return Lightning AI launch arguments
+        # Updated to use direct paths as per Lightning AI setup
+        base_path = '/teamspace/studios/this_studio'
+        return [
+            '--xformers',
+            '--no-half-vae',
+            '--opt-split-attention',
+            '--medvram',
+            '--disable-console-progressbars',
+            '--api',
+            '--cors-allow-origins=*',
+            '--listen',
+            '--port=8080',
+            f'--ckpt-dir={base_path}/models',
+            f'--embeddings-dir={base_path}/embeddings',
+            f'--lora-dir={base_path}/lora',
+            f'--vae-dir={base_path}/vae',
+            f'--controlnet-dir={base_path}/controlnet',
+            '--disable-safe-unpickle',  # For Lightning AI compatibility
+            '--skip-torch-cuda-test',   # Skip CUDA tests
+            '--no-download-sd-model'    # Don't auto-download models
+        ]
+
+    elif platform == 'colab':
+        # Google Colab optimizations
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        return [
+            '--share',
+            '--xformers',
+            '--enable-insecure-extension-access',
+            '--opt-split-attention'
+        ]
+
+    elif platform == 'kaggle':
+        # Kaggle optimizations
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        return [
+            '--listen',
+            '--port=8080',
+            '--xformers',
+            '--medvram',
+            '--opt-split-attention'
+        ]
+
+    else:
+        # Local/default
+        return ['--xformers']
+
+# Apply optimizations and get launch arguments
+PLATFORM_ARGS = detect_and_optimize_platform()
+
+
 CD = os.chdir
 ipySys = get_ipython().system
 
@@ -110,7 +216,9 @@ def get_launch_command():
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"
     else:
-        return f"python3 launch.py {base_args}{common_args}"
+        # Replaced original argument assembly with PLATFORM_ARGS
+        final_args = " ".join(PLATFORM_ARGS)
+        return f"python3 launch.py {final_args}{common_args}"
 
 ## ===================== Tunneling =======================
 
@@ -350,7 +458,7 @@ if __name__ == '__main__':
                 print(f"  - {error['name']}: {error['reason']}")
             print()
 
-        print(f"🔧 WebUI: \033[34m{UI}\033[0m")
+        print(f"🔧 WebUI: \033[34m{UI}\003[0m")
 
         try:
             ipySys(LAUNCHER)
