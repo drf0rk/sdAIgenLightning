@@ -741,7 +741,7 @@ line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
 line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
 line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
-# Corrected: Now lora_data_to_use is defined globally from the exec block
+# Corrected: Now lora_list_to_use is defined globally from the exec block
 line = handle_submodels(lora, lora_num, lora_list_to_use, str(lora_dir), line)
 
 
