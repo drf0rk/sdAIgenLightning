@@ -20,6 +20,7 @@ import time
 import json
 import sys
 import re # Ensure re module is imported
+import os # Fix: Added import os
 
 
 # Platform-aware downloading configuration
@@ -566,7 +567,8 @@ def _clean_url(url):
     return url
 
 def _extract_filename(url):
-    if match := re.re.search(r'\[(.*?)\]', url): # Fix: Changed re.re.search to re.search
+    # Fix: Changed re.re.search to re.search
+    if match := re.search(r'\[(.*?)\]', url):
         return match.group(1)
     if any(d in urlparse(url).netloc for d in ["civitai.com", "drive.google.com"]):
         return None
