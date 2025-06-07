@@ -330,7 +330,6 @@ def setup_storage():
 
 DRIVE_PATH = setup_storage() # Assigning the result of setup_storage to DRIVE_PATH
 # Fix: Save DRIVE_PATH to settings.json so other scripts can access it
-# Use the inlined save_data_to_json_nested for this.
 save_data_to_json_nested(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
 
 
