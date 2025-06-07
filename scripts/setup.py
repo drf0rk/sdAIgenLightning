@@ -201,8 +201,8 @@ def environment_setup():
             os.environ.get('LIGHTNING_CLOUD_PROJECT_ID'),
             os.environ.get('LIGHTNING_AI'),
             os.path.exists('/teamspace'),
-            'lightning' in os.environ.get('PWD', '').lower(),
-            'studios' in os.environ.get('PWD', '').lower(),
+            'lightning' in os.environ.get('PWD', '').lower() or # Ensure exact match on 'lightning' in PWD for stricter detection
+            'studios' in os.environ.get('PWD', '').lower() or # Ensure exact match on 'studios' in PWD
             'lightning' in str(Path.home()).lower()
         ]
 
@@ -230,7 +230,7 @@ def environment_setup():
         required_dirs = [
             'models', 'outputs', 'extensions', 'embeddings',
             'lora', 'vae', 'controlnet', 'config', 'logs',
-            'temp', '.cache', 'ANXETY', 'ANXETY/scripts'
+            'temp', '.cache', 'ANXETY', 'ANXETY/scripts', 'sd_models_shared' # Added sd_models_shared
         ]
 
         for dir_name in required_dirs:
@@ -294,7 +294,6 @@ def setup_storage():
 
 DRIVE_PATH = setup_storage() # Assigning the result of setup_storage to DRIVE_PATH
 # Fix: Save DRIVE_PATH to settings.json so other scripts can access it
-# Assuming `js` (json_utils) is available, which it is globally in setup.py
 import json_utils as js # Ensure js is imported here for safety, though it is usually global
 js.save(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
 
@@ -344,7 +343,7 @@ async def download_files_async(scr_path, lang, fork_user, fork_repo, branch, log
             'UIs': ['A1111.py', 'ComfyUI.py', 'Forge.py', 'Classic.py', 'ReForge.py', 'SD-UX.py'],
             lang: [f"widgets-{lang}.py", f"downloading-{lang}.py"],
             '': ['launch.py', 'auto-cleaner.py', 'download-result.py',
-                '_models-data.py', '_xl-models-data.py']
+                '_models-data.py', '_xl-models-data.py', '_loras-data.py'] # Added _loras-data.py
         }
     }
 
