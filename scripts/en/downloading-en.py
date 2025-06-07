@@ -227,7 +227,8 @@ def load_settings(path):
         return {
             **js.read(path, 'ENVIRONMENT'),
             **js.read(path, 'WIDGETS'),
-            **js.read(path, 'WEBUI')
+            # Safely get 'WEBUI' section with a default empty dict
+            **js.read(path, 'WEBUI', {})
         }
     except (json.JSONDecodeError, IOError) as e:
         print(f"Error loading settings: {e}")
@@ -241,21 +242,24 @@ locals().update(settings)
 DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
 
 # Populate model/asset directories from settings.json (paths set by webui_utils.py)
-model_dir = Path(settings['WEBUI']['model_dir'])
-vae_dir = Path(settings['WEBUI']['vae_dir'])
-lora_dir = Path(settings['WEBUI']['lora_dir'])
-embed_dir = Path(settings['WEBUI']['embed_dir'])
-extension_dir = Path(settings['WEBUI']['extension_dir'])
-control_dir = Path(settings['WEBUI']['control_dir'])
-upscale_dir = Path(settings['WEBUI']['upscale_dir'])
-output_dir = Path(settings['WEBUI']['output_dir'])
-config_dir = Path(settings['WEBUI']['config_dir'])
-adetailer_dir = Path(settings['WEBUI']['adetailer_dir'])
-clip_dir = Path(settings['WEBUI']['clip_dir'])
-unet_dir = Path(settings['WEBUI']['unet_dir'])
-vision_dir = Path(settings['WEBUI']['vision_dir'])
-encoder_dir = Path(settings['WEBUI']['encoder_dir'])
-diffusion_dir = Path(settings['WEBUI']['diffusion_dir'])
+# Safely get the 'WEBUI' dictionary before accessing its keys
+webui_settings = settings.get('WEBUI', {})
+
+model_dir = Path(webui_settings.get('model_dir', str(HOME / 'models')))
+vae_dir = Path(webui_settings.get('vae_dir', str(HOME / 'vae')))
+lora_dir = Path(webui_settings.get('lora_dir', str(HOME / 'lora')))
+embed_dir = Path(webui_settings.get('embed_dir', str(HOME / 'embeddings')))
+extension_dir = Path(webui_settings.get('extension_dir', str(HOME / 'extensions')))
+control_dir = Path(webui_settings.get('control_dir', str(HOME / 'ControlNet')))
+upscale_dir = Path(webui_settings.get('upscale_dir', str(HOME / 'upscale_models')))
+output_dir = Path(webui_settings.get('output_dir', str(HOME / 'outputs')))
+config_dir = Path(webui_settings.get('config_dir', str(HOME / 'config')))
+adetailer_dir = Path(webui_settings.get('adetailer_dir', str(HOME / 'adetailer')))
+clip_dir = Path(webui_settings.get('clip_dir', str(HOME / 'clip')))
+unet_dir = Path(webui_settings.get('unet_dir', str(HOME / 'unet')))
+vision_dir = Path(webui_settings.get('vision_dir', str(HOME / 'vision')))
+encoder_dir = Path(webui_settings.get('encoder_dir', str(HOME / 'encoder')))
+diffusion_dir = Path(webui_settings.get('diffusion_dir', str(HOME / 'diffusion_models')))
 
 
 ## ======================== WEBUI ========================
