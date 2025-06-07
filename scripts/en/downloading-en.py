@@ -264,6 +264,65 @@ encoder_dir = Path(webui_settings.get('encoder_dir', str(HOME / 'encoder')))
 diffusion_dir = Path(webui_settings.get('diffusion_dir', str(HOME / 'diffusion_models')))
 
 
+# NEW: Platform-aware download functions (moved here to ensure they are defined before first use)
+def download_file_platform_aware(url, destination, description="Downloading"):
+    """Platform-aware file download with optimizations"""
+    import requests
+    from tqdm import tqdm
+
+    config = DOWNLOAD_CONFIG
+
+    try:
+        # Create destination directory
+        Path(destination).parent.mkdir(parents=True, exist_ok=True)
+
+        # Download with platform-specific settings
+        response = requests.get(
+            url,
+            stream=True,
+            timeout=config['timeout'],
+            verify=config['verify_ssl']
+        )
+        response.raise_for_status()
+
+        total_size = int(response.headers.get('content-length', 0))
+
+        with open(destination, 'wb') as file, tqdm(
+            desc=description,
+            total=total_size,
+            unit='B',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as progress_bar:
+            for chunk in response.iter_content(chunk_size=config['chunk_size']):
+                if chunk:
+                    file.write(chunk)
+                    progress_bar.update(len(chunk))
+
+        return True
+
+    except Exception as e:
+        print(f"Download failed: {e}")
+        return False
+
+def download_model_platform_aware(model_info):
+    """Download model with platform-specific optimizations"""
+    model_name = model_info['name']
+    model_url = model_info['url']
+
+    # Use platform-specific model directory
+    destination = model_dir / model_name
+
+    print(f"📥 Downloading {model_name} to {destination}")
+
+    if download_file_platform_aware(model_url, destination, f"Downloading {model_name}"):
+        print(f"✅ Successfully downloaded {model_name}")
+        return True
+    else:
+        print(f"❌ Failed to download {model_name}")
+        return False
+
+
 ## ======================== WEBUI ========================
 
 if UI in ['A1111', 'SD-UX'] and not os.path.exists(Path(HOME) / '.cache/huggingface/hub/models--Bingsu--adetailer'): # Updated path
@@ -331,8 +390,8 @@ if latest_webui or latest_extensions:
             if os.path.isdir(dir_path):
                 # DEBUG START: Ensure output is visible
                 print(f"  Updating extension: {entry}")
-                subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False, capture_output=False)
-                subprocess.run(['git', 'pull'], cwd=dir_path, check=False, capture_output=False)
+                subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
+                subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
                 # DEBUG END
 
     print(f"\r✨ Update {action} Completed!")
@@ -568,7 +627,6 @@ def _clean_url(url):
     return url
 
 def _extract_filename(url):
-    # Fix: Changed re.re.search to re.search
     if match := re.search(r'\[(.*?)\]', url):
         return match.group(1)
     if any(d in urlparse(url).netloc for d in ["civitai.com", "drive.google.com"]):
