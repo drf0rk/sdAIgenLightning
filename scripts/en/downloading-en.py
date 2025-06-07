@@ -96,7 +96,7 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 LANG = js.read(SETTINGS_PATH, 'ENVIRONMENT.lang')
 ENV_NAME = js.read(SETTINGS_PATH, 'ENVIRONMENT.env_name')
 UI = js.read(SETTINGS_PATH, 'WEBUI.current')
-WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path')
+WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path', str(HOME / 'webui')) # Fix: Added default for WEBUI
 
 
 # Text Colors (\033)
@@ -771,7 +771,7 @@ def _process_lines(lines):
             continue
 
         # Normalise the delimiters and process each URL
-        normalized_line = re.re.sub(r'[\s,]+', ',', line.strip())
+        normalized_line = re.sub(r'[\s,]+', ',', line.strip())
         for url_entry in normalized_line.split(','):
             url = url_entry.split('#')[0].strip()
             if not url.startswith('http'):
