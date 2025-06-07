@@ -8,8 +8,7 @@ import ipywidgets as widgets
 from pathlib import Path
 import os
 
-# Import the new LoRA data file
-import _loras_data
+# Removed: import _loras_data - it will be loaded dynamically by read_model_data
 
 
 # Platform-aware widget configuration
@@ -200,7 +199,8 @@ vae_num_widget = factory.create_text('Vae Number:', '', 'Enter vae numbers for d
 # --- LORA (NEW SECTION) ---
 """Create LoRA selection widgets."""
 lora_header = factory.create_header('LoRA Selection')
-lora_options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora') # Read from new loras-data.py
+# Now, _loras_data.py is accessed directly via its path and exec'd within read_model_data
+lora_options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora')
 lora_widget = factory.create_dropdown(lora_options, 'LoRA:', 'none')
 lora_num_widget = factory.create_text('LoRA Number:', '', 'Enter LoRA numbers for download.')
 
@@ -244,7 +244,7 @@ ngrok_widget = factory.create_hbox([ngrok_token_widget, ngrok_button])
 
 # Moved Zrok widget definition before additional_widget_list
 zrok_token_widget = factory.create_text('Zrok Token:')
-zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU')
+zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUAvrHSuQyHTDuLy36WpU')
 zrok_widget = factory.create_hbox([zrok_token_widget, zrok_button])
 # HARDCODED TOKENS END HERE
 
