@@ -13,6 +13,7 @@ import time
 import json
 import sys
 import os
+import json_utils as js # Moved to top for immediate availability
 
 
 # Platform detection added for Lightning AI compatibility
@@ -294,7 +295,6 @@ def setup_storage():
 
 DRIVE_PATH = setup_storage() # Assigning the result of setup_storage to DRIVE_PATH
 # Fix: Save DRIVE_PATH to settings.json so other scripts can access it
-import json_utils as js # Ensure js is imported here for safety, though it is usually global
 js.save(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
 
 
