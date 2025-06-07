@@ -225,8 +225,10 @@ def load_settings(path):
     """Load settings from a JSON file."""
     try:
         return {
-            **js.read(path, 'ENVIRONMENT'),
-            **js.read(path, 'WIDGETS'),
+            # Provide empty dict as default if 'ENVIRONMENT' is missing or not a dict
+            **js.read(path, 'ENVIRONMENT', {}),
+            # Provide empty dict as default if 'WIDGETS' is missing or not a dict
+            **js.read(path, 'WIDGETS', {}),
             # Safely get 'WEBUI' section with a default empty dict
             **js.read(path, 'WEBUI', {})
         }
@@ -350,7 +352,7 @@ if commit_hash:
 
 # === Google Drive Mounting (Now handled by setup.py, removing redundant code) ===
 # The 'from google.colab import drive' and 'handle_gdrive' function are removed from here
-# as the main GDrive setup is now centralized in setup.py
+# as the main GDrive setup is now centralized in the setup.py
 
 # Configuration
 GD_BASE = str(DRIVE_PATH) # Use the dynamically determined DRIVE_PATH
