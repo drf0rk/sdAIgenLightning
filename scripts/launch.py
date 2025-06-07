@@ -187,7 +187,7 @@ def _trashing():
         subprocess.run(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def _update_config_paths():
-    """Update configuration paths in WebUI config file"""
+    """Update configuration paths in WebUI config file."""
     config_mapping = {
         'tagger_hf_cache_dir': f"{WEBUI}/models/interrogators/",
         'ad_extra_models_dir': adetailer_dir,
@@ -218,8 +218,10 @@ def get_launch_command():
 
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"
-    else:
-        # Replaced original argument assembly with PLATFORM_ARGS
+    elif UI == 'ReForge': # Specific handling for ReForge, assuming 'webui.py' is its main entry point
+        final_args = " ".join(PLATFORM_ARGS)
+        return f"python3 webui.py {final_args}{common_args}"
+    else: # Default case for other UIs like A1111, Forge, Classic, SD-UX
         final_args = " ".join(PLATFORM_ARGS)
         return f"python3 launch.py {final_args}{common_args}"
 
