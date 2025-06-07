@@ -622,7 +622,7 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
 
         model_type, file_name = data.model_type, data.model_name    # Type, name
         clean_url_for_display, url = data.clean_url, data.download_url          # Clean_URL, URL
-        image_url, image_name = data.image.url, data.image_name     # Img_URL, Img_Name
+        image_url, image_name = data.image.url, data.image.name     # Img_URL, Img_Name
 
         # Download preview images using the new platform-aware function
         if image_url and image_name:
@@ -710,6 +710,8 @@ line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
 line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
 line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
+line = handle_submodels(lora, lora_num, _loras_data.lora_list, str(lora_dir), line) # Added LoRA handling
+
 
 ''' File.txt - added urls '''
 
