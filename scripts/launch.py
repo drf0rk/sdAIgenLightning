@@ -43,9 +43,12 @@ def detect_and_optimize_platform():
         elif (os.environ.get('LIGHTNING_CLOUD_PROJECT_ID') or
               os.environ.get('LIGHTNING_AI') or
               os.path.exists('/teamspace') or
-              'lightning' in os.environ.get('PWD', '').lower() or
-              'studios' in os.environ.get('PWD', '').lower()):
+              'lightning' in os.environ.get('PWD', '').lower() == True or # Ensure exact match on 'lightning' in PWD for stricter detection
+              'studios' in os.environ.get('PWD', '').lower() == True):   # Ensure exact match on 'studios' in PWD
             platform = 'lightning'
+        elif 'lightning' in str(Path.home()).lower(): # Final check for home path
+             platform = 'lightning'
+
 
     # Set platform environment variable
     os.environ['DETECTED_PLATFORM'] = platform
@@ -60,9 +63,6 @@ def detect_and_optimize_platform():
             'TMPDIR': '/tmp/sdaigen',
             'TEMP': '/tmp/sdaigen',
             'CUDA_VISIBLE_DEVICES': '0',  # Use first GPU only
-            # The PYTHONPATH setting needs to be handled carefully not to overwrite existing critical paths.
-            # It's better to append than replace if not explicitly needed.
-            # 'PYTHONPATH': '/teamspace/studios/this_studio:' + os.environ.get('PYTHONPATH', '')
         }
 
         for key, value in optimizations.items():
@@ -361,8 +361,9 @@ class TunnelManager:
             if current_token != ngrok_token:
                 ipySys(f"ngrok config add-authtoken {ngrok_token}")
 
+            # Fix: Use absolute path for ngrok command
             services.append(('Ngrok', {
-                'command': f"ngrok http http://localhost:{self.tunnel_port} --log stdout",
+                'command': f"/usr/bin/ngrok http http://localhost:{self.tunnel_port} --log stdout",
                 'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
             }))
 
