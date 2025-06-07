@@ -75,11 +75,7 @@ def detect_and_optimize_platform():
 
         print("⚡ Applied Lightning AI optimizations")
 
-        # Define the centralized model base for PLATFORM_ARGS
-        SHARED_MODEL_BASE = Path('/teamspace/studios/this_studio') / 'sd_models_shared'
-        os.makedirs(SHARED_MODEL_BASE, exist_ok=True) # Ensure shared base exists
-
-        # Return Lightning AI launch arguments
+        # Return Lightning AI launch arguments, explicitly adding --share
         return [
             '--xformers',
             '--no-half-vae',
@@ -90,6 +86,7 @@ def detect_and_optimize_platform():
             '--cors-allow-origins=*',
             '--listen',
             '--port=8080',
+            '--share', # Added to enable public Gradio link
             f'--ckpt-dir={SHARED_MODEL_BASE}/Stable-diffusion', # Point to shared location
             f'--embeddings-dir={SHARED_MODEL_BASE}/embeddings', # Point to shared location
             f'--lora-dir={SHARED_MODEL_BASE}/loras', # Point to shared location
