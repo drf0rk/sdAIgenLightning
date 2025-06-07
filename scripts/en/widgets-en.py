@@ -8,6 +8,9 @@ import ipywidgets as widgets
 from pathlib import Path
 import os
 
+# Import the new LoRA data file
+import _loras_data
+
 
 # Platform-aware widget configuration
 PLATFORM = os.environ.get('DETECTED_PLATFORM', 'local')
@@ -147,11 +150,12 @@ def create_expandable_button(text, url):
     ''')
 
 def read_model_data(file_path, data_type):
-    """Reads model, VAE, or ControlNet data from the specified file."""
+    """Reads model, VAE, ControlNet, or LoRA data from the specified file."""
     type_map = {
         'model': ('model_list', ['none']),
         'vae': ('vae_list', ['none', 'ALL']),
-        'cnet': ('controlnet_list', ['none', 'ALL'])
+        'cnet': ('controlnet_list', ['none', 'ALL']),
+        'lora': ('lora_list', ['none', 'ALL']) # Added lora type
     }
     key, prefixes = type_map[data_type]
     local_vars = {}
@@ -192,6 +196,14 @@ vae_header = factory.create_header('VAE Selection')
 vae_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'vae')
 vae_widget = factory.create_dropdown(vae_options, 'Vae:', '3. Blessed2.vae')
 vae_num_widget = factory.create_text('Vae Number:', '', 'Enter vae numbers for download.')
+
+# --- LORA (NEW SECTION) ---
+"""Create LoRA selection widgets."""
+lora_header = factory.create_header('LoRA Selection')
+lora_options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora') # Read from new loras-data.py
+lora_widget = factory.create_dropdown(lora_options, 'LoRA:', 'none')
+lora_num_widget = factory.create_text('LoRA Number:', '', 'Enter LoRA numbers for download.')
+
 
 # --- ADDITIONAL ---
 """Create additional configuration widgets."""
@@ -250,6 +262,8 @@ additional_widget_list = [
     HR,
     controlnet_widget, controlnet_num_widget,
     commit_hash_widget,
+    lora_header, lora_widget, lora_num_widget, # Added LoRA widgets
+    HR, # Added HR for separation
     civitai_widget, huggingface_widget, zrok_widget, ngrok_widget,
     HR,
     # commandline_arguments_widget,
@@ -339,6 +353,7 @@ factory.load_js(widgets_js)     # load JS (widgets)
 # Display sections
 model_widgets = [model_header, model_widget, model_num_widget, switch_model_widget]
 vae_widgets = [vae_header, vae_widget, vae_num_widget]
+lora_widgets = [lora_header, lora_widget, lora_num_widget] # Group LoRA widgets
 additional_widgets = additional_widget_list
 custom_download_widgets = [
     custom_download_header_popup,
@@ -359,10 +374,12 @@ model_content = factory.create_vbox(model_widgets, class_names=['container'])   
 model_box = factory.create_hbox([model_content, GDrive_button], layout={'width': '1150px'})   # fix layout width...
 
 vae_box = factory.create_vbox(vae_widgets, class_names=['container'])
+lora_box = factory.create_vbox(lora_widgets, class_names=['container']) # New LoRA Box
 additional_box = factory.create_vbox(additional_widgets, class_names=['container'])
 custom_download_box = factory.create_vbox(custom_download_widgets, class_names=['container', 'container_cdl'])
 
-WIDGET_LIST = factory.create_vbox([model_box, vae_box, additional_box, custom_download_box, save_button],
+# Added lora_box to the main display list
+WIDGET_LIST = factory.create_vbox([model_box, vae_box, lora_box, additional_box, custom_download_box, save_button],
                                   class_names=['mainContainer'])
 factory.display(WIDGET_LIST)
 
@@ -382,14 +399,20 @@ def update_XL_options(change, widget):
         False: ('4. Counterfeit [Anime] [V3] + INP', '3. Blessed2.vae', 'none')    # SD 1.5 models
     }
 
-    # Get data - MODELs | VAEs | CNETs
+    # Get data - MODELs | VAEs | CNETs | LoRAs
     data_file = '_xl-models-data.py' if selected else '_models-data.py'
     model_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'model')
     vae_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'vae')
     controlnet_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'cnet')
+    # For LoRA, it always reads from _loras-data.py, so no change based on XL_models
+    # lora_widget.options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora')
+
 
     # Set default values from the dictionary
     model_widget.value, vae_widget.value, controlnet_widget.value = default_model_values[selected]
+    # LoRA default value
+    # lora_widget.value = 'none'
+
 
 # Callback functions for updating widgets
 def update_change_webui(change, widget):
@@ -448,6 +471,7 @@ SETTINGS_KEYS = [
       'XL_models', 'model', 'model_num', 'inpainting_model', 'vae', 'vae_num',
       'latest_webui', 'latest_extensions', 'check_custom_nodes_deps', 'change_webui', 'detailed_download',
       'controlnet', 'controlnet_num', 'commit_hash',
+      'lora', 'lora_num', # Added lora and lora_num to SETTINGS_KEYS
       'civitai_token', 'huggingface_token', 'zrok_token', 'ngrok_token', 'commandline_arguments', 'theme_accent',
       # CustomDL
       'empowerment', 'empowerment_output',
@@ -485,7 +509,7 @@ def save_data(button):
     """Handle save button click."""
     save_settings()
     # factory.close(list(WIDGET_LIST.children), class_names=['hide'], delay=0.8)
-    all_widgets = [model_content, vae_box, additional_box, custom_download_box, save_button, GDrive_button]
+    all_widgets = [model_content, vae_box, lora_box, additional_box, custom_download_box, save_button, GDrive_button] # Added lora_box
     factory.close(all_widgets, class_names=['hide'], delay=0.8)
 
 load_settings()
