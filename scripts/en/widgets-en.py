@@ -9,6 +9,119 @@ from pathlib import Path
 import os
 
 
+# Platform-aware widget configuration
+PLATFORM = os.environ.get('DETECTED_PLATFORM', 'local')
+
+def get_platform_paths():
+    """Get platform-specific paths for widgets"""
+    if PLATFORM == 'lightning':
+        base = '/teamspace/studios/this_studio'
+        return {
+            'models': f'{base}/models',
+            'outputs': f'{base}/outputs',
+            'extensions': f'{base}/extensions',
+            'embeddings': f'{base}/embeddings',
+            'lora': f'{base}/lora',
+            'vae': f'{base}/vae',
+            'controlnet': f'{base}/controlnet',
+            'temp': '/tmp/sdaigen',
+            'cache': f'{base}/.cache'
+        }
+    elif PLATFORM == 'colab':
+        return {
+            'models': '/content/models',
+            'outputs': '/content/outputs',
+            'extensions': '/content/extensions',
+            'embeddings': '/content/embeddings',
+            'lora': '/content/lora',
+            'vae': '/content/vae',
+            'controlnet': '/content/controlnet',
+            'temp': '/tmp',
+            'cache': '/content/.cache'
+        }
+    elif PLATFORM == 'kaggle':
+        base = '/kaggle/working'
+        return {
+            'models': f'{base}/models',
+            'outputs': f'{base}/outputs',
+            'extensions': f'{base}/extensions',
+            'embeddings': f'{base}/embeddings',
+            'lora': f'{base}/lora',
+            'vae': f'{base}/vae',
+            'controlnet': f'{base}/controlnet',
+            'temp': '/kaggle/tmp',
+            'cache': f'{base}/.cache'
+        }
+    else:
+        import os
+        base = os.getcwd()
+        return {
+            'models': f'{base}/models',
+            'outputs': f'{base}/outputs',
+            'extensions': f'{base}/extensions',
+            'embeddings': f'{base}/embeddings',
+            'lora': f'{base}/lora',
+            'vae': f'{base}/vae',
+            'controlnet': f'{base}/controlnet',
+            'temp': f'{base}/temp',
+            'cache': f'{base}/.cache'
+        }
+
+# Get paths and create directories
+PATHS = get_platform_paths()
+for path in PATHS.values():
+    os.makedirs(path, exist_ok=True)
+
+def get_model_path(model_type='models'):
+    """Get platform-specific model path"""
+    return PATHS.get(model_type, PATHS['models'])
+
+def get_platform_widget_settings():
+    """Get platform-optimized widget settings"""
+    if PLATFORM == 'lightning':
+        return {
+            'max_batch_size': 2,  # Conservative for Lightning AI
+            'max_steps': 50,
+            'default_sampler': 'DPM++ 2M Karras',
+            'enable_xformers': True,
+            'enable_api': True,
+            'listen_all': True,
+            'port': 8080
+        }
+    elif PLATFORM == 'colab':
+        return {
+            'max_batch_size': 4,
+            'max_steps': 100,
+            'default_sampler': 'Euler a',
+            'enable_xformers': True,
+            'enable_api': False,
+            'listen_all': False,
+            'port': 7860
+        }
+    elif PLATFORM == 'kaggle':
+        return {
+            'max_batch_size': 3,
+            'max_steps': 75,
+            'default_sampler': 'DPM++ 2M Karras',
+            'enable_xformers': True,
+            'enable_api': True,
+            'listen_all': True,
+            'port': 8080
+        }
+    else:
+        return {
+            'max_batch_size': 4,
+            'max_steps': 100,
+            'default_sampler': 'Euler a',
+            'enable_xformers': True,
+            'enable_api': False,
+            'listen_all': False,
+            'port': 7860
+        }
+
+WIDGET_SETTINGS = get_platform_widget_settings()
+
+
 # Constants
 HOME = Path.home()
 SCR_PATH = Path(HOME / 'ANXETY')
