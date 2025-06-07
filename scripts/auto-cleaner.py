@@ -88,118 +88,63 @@ def clean_directory(directory, directory_type):
     return deleted_files
 
 # --- START OF MODIFICATION ---
-# Use a global variable to store confirmation status
-_confirm_global_delete_status = False
-
-def _on_confirm_global_delete_button_click(button):
-    """Callback function for the global delete confirmation button."""
-    global _confirm_global_delete_status
-    _confirm_global_delete_status = True
-
+# No longer using a global status variable or interactive confirmation
 def clean_all_except_notebook_and_main():
     """Deletes all files and folders in the current working directory except the notebook and main.py."""
-    global _confirm_global_delete_status # Access the global variable
-
     output.clear_output()
     with output:
         print("!!! Initiating COMPREHENSIVE DELETION !!!")
-        print("This will remove almost everything. Please confirm again.")
-        confirm_html = HTML("""
-            <p style="color: red; font-weight: bold;">
-                Type 'CONFIRM_GLOBAL_DELETE' (case-sensitive) in the text box below and then click 'Confirm Deletion'.
-            </p>
-            <p>Anything else will abort.</p>
-        """)
-        display(confirm_html)
+        print("This will remove almost everything in your studio instance.")
+        print("This action is irreversible and requires a runtime restart for a clean state.")
+        print("\n--- Proceeding with deletion in 5 seconds... (Ctrl+C to abort) ---")
+        time.sleep(5) # Give user a moment to react and Ctrl+C if needed
+
+        HOME_PATH = Path.home() # Use Path.home() to target the studio root
+
+        # Get the current notebook's filename reliably within the execution environment
+        notebook_filename = None
+        for fname in os.listdir(HOME_PATH):
+            if fname.endswith('.ipynb') and 'LightningAnxiety' in fname: # Heuristic for your notebook name
+                notebook_filename = fname
+                break
         
-        # Text input widget
-        global_confirm_input_widget = widgets.Text(
-            description="Confirm:", 
-            placeholder="CONFIRM_GLOBAL_DELETE",
-            layout=widgets.Layout(width='auto')
-        )
-        # Button for explicit confirmation
-        confirm_button = widgets.Button(
-            description="Confirm Deletion",
-            button_style='danger',
-            layout=widgets.Layout(width='auto')
-        )
-        confirm_button.on_click(_on_confirm_global_delete_button_click)
+        notebook_path = HOME_PATH / notebook_filename if notebook_filename else None
+        main_py_path = HOME_PATH / "main.py"
 
-        # Display widgets
-        display(global_confirm_input_widget, confirm_button)
+        EXCLUDE_LIST = []
+        if notebook_path and notebook_path.exists():
+            EXCLUDE_LIST.append(notebook_path.resolve()) # Resolve to absolute path for consistent comparison
+            print(f"ℹ️ Protecting notebook: {notebook_path.name}")
+        if main_py_path.exists():
+            EXCLUDE_LIST.append(main_py_path.resolve()) # Resolve to absolute path
+            print(f"ℹ️ Protecting main.py: {main_py_path.name}")
         
-        _confirm_global_delete_status = False # Reset status before waiting
-        # Wait for the user to click the button
-        while not _confirm_global_delete_status:
-            time.sleep(0.1) # Short delay to prevent busy-waiting
+        deleted_count = 0
+        skipped_count = 0
 
-        confirmation_input = global_confirm_input_widget.value.strip()
+        # Iterate through contents of HOME_PATH and delete
+        print(f"\n--- Starting Comprehensive Deletion in {HOME_PATH} ---")
+        for item in HOME_PATH.iterdir():
+            # Convert item to absolute path for consistent comparison with EXCLUDE_LIST
+            abs_item = item.resolve()
+            if abs_item in EXCLUDE_LIST:
+                skipped_count += 1
+                continue # Skip protected items
 
-        # Close widgets to clean up the display
-        global_confirm_input_widget.close()
-        confirm_button.close()
-        clear_output(wait=True) # Clear confirmation prompt output
-
-        if confirmation_input == "CONFIRM_GLOBAL_DELETE":
-            with output: # Ensure subsequent prints go to the output widget
-                print("\nProceeding with global deletion...")
-            HOME_PATH = Path.home() # Use Path.home() to target the studio root
-
-            # Get the current notebook's filename reliably within the execution environment
-            notebook_filename = None
-            for fname in os.listdir(HOME_PATH):
-                if fname.endswith('.ipynb') and 'LightningAnxiety' in fname: # Heuristic for your notebook name
-                    notebook_filename = fname
-                    break
-            
-            notebook_path = HOME_PATH / notebook_filename if notebook_filename else None
-            main_py_path = HOME_PATH / "main.py"
-
-            EXCLUDE_LIST = []
-            if notebook_path and notebook_path.exists():
-                EXCLUDE_LIST.append(notebook_path.resolve()) # Resolve to absolute path for consistent comparison
-                with output:
-                    print(f"ℹ️ Protecting notebook: {notebook_path.name}")
-            if main_py_path.exists():
-                EXCLUDE_LIST.append(main_py_path.resolve()) # Resolve to absolute path
-                with output:
-                    print(f"ℹ️ Protecting main.py: {main_py_path.name}")
-            
-            deleted_count = 0
-            skipped_count = 0
-
-            # Iterate through contents of HOME_PATH and delete
-            with output:
-                print(f"\n--- Starting Comprehensive Deletion in {HOME_PATH} ---")
-            for item in HOME_PATH.iterdir():
-                # Convert item to absolute path for consistent comparison with EXCLUDE_LIST
-                abs_item = item.resolve()
-                if abs_item in EXCLUDE_LIST:
-                    skipped_count += 1
-                    continue # Skip protected items
-
-                with output:
-                    print(f"🗑️ Deleting: {item.name}...")
-                try:
-                    if item.is_dir():
-                        shutil.rmtree(item)
-                    else:
-                        item.unlink() # Delete file
-                    with output:
-                        print(f"✅ Deleted: {item.name}")
-                    deleted_count += 1
-                except Exception as e:
-                    with output:
-                        print(f"❌ Error deleting {item.name}: {e}")
-            
-            with output:
-                print("\n--- Global Cleanup Process Complete ---")
-                print(f"Summary: {deleted_count} items deleted, {skipped_count} items skipped (protected).")
-                print("Please restart your runtime and run the notebook from the first cell for a fresh start.")
-        else:
-            with output:
-                print("\nGlobal deletion aborted by user.")
+            print(f"🗑️ Deleting: {item.name}...")
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink() # Delete file
+                print(f"✅ Deleted: {item.name}")
+                deleted_count += 1
+            except Exception as e:
+                print(f"❌ Error deleting {item.name}: {e}")
+        
+        print("\n--- Global Cleanup Process Complete ---")
+        print(f"Summary: {deleted_count} items deleted, {skipped_count} items skipped (protected).")
+        print("Please restart your runtime and run the notebook from the first cell for a fresh start.")
     _update_memory_info()
 
 # --- END OF MODIFICATION ---
