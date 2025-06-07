@@ -13,7 +13,6 @@ import time
 import json
 import sys
 import os
-import json_utils as js # Moved to top for immediate availability
 
 
 # Platform detection added for Lightning AI compatibility
@@ -60,6 +59,20 @@ else:
     HOME = Path.cwd()
 SCR_PATH = HOME / 'ANXETY'
 SETTINGS_PATH = SCR_PATH / 'settings.json'
+
+# NEW: Explicitly set up the module folder very early for global imports
+# This ensures json_utils is discoverable before its global use.
+def setup_module_folder_early(scr_folder_early):
+    modules_folder_early = scr_folder_early / 'modules'
+    modules_folder_early.mkdir(parents=True, exist_ok=True)
+    if str(modules_folder_early) not in sys.path:
+        sys.path.insert(0, str(modules_folder_early)) # Use insert(0) to prioritize
+
+setup_module_folder_early(SCR_PATH)
+
+# Now, it's safe to import json_utils globally
+import json_utils as js
+
 
 nest_asyncio.apply()  # Async support for Jupyter
 
@@ -119,10 +132,13 @@ def clear_module_cache(modules_folder):
     importlib.invalidate_caches()
 
 def setup_module_folder(scr_folder):
-    """Set up the module folder by clearing the cache and adding it to sys.path."""
+    """Set up the module folder by clearing the cache and adding it to sys.path.
+    This function is kept for consistency with how modules are cleared/reloaded later.
+    The initial path addition is now handled by `setup_module_folder_early`.
+    """
     clear_module_cache(scr_folder)
+    # The path should already be there from setup_module_folder_early, but this ensures it.
     modules_folder = scr_folder / 'modules'
-    modules_folder.mkdir(parents=True, exist_ok=True)
     if str(modules_folder) not in sys.path:
         sys.path.append(str(modules_folder))
 
