@@ -586,14 +586,19 @@ def _process_download_link(link):
     prefixed_match = re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
     if prefixed_match:
         prefix = prefixed_match.group(1)
-        raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
-        
-        clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
-        specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
-        return (prefix, clean_url, specified_filename)
+        # NEW: Check if the extracted prefix is a valid key in PREFIX_MAP
+        if prefix in PREFIX_MAP: # Ensure it's a recognized content prefix, not a URL scheme
+            raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
+            
+            clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
+            specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
+            return (prefix, clean_url, specified_filename)
+        else:
+            # If the extracted prefix is not a known content prefix (e.g., 'https'),
+            # treat the entire link as a non-prefixed URL.
+            return (None, link, None)
     else:
-        # If not prefixed, treat the whole link as a potential URL or "url dst_dir filename" string
-        # The filename extraction is handled by download() for non-prefixed cases
+        # No colon found, or doesn't match prefix: format
         return (None, link, None)
 
 
@@ -736,7 +741,8 @@ line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
 line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
 line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
-line = handle_submodels(lora, lora_num, lora_list_to_use, str(lora_dir), line) # Updated to use lora_list_to_use
+# Corrected: Now lora_data_to_use is defined globally from the exec block
+line = handle_submodels(lora, lora_num, lora_list_to_use, str(lora_dir), line)
 
 
 ''' File.txt - added urls '''
