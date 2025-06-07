@@ -96,30 +96,33 @@ def clean_all_except_notebook_and_main():
         print("This will remove almost everything. Please confirm again.")
         confirm_html = HTML("""
             <p style="color: red; font-weight: bold;">
-                Type 'CONFIRM_GLOBAL_DELETE' (case-sensitive) and press Enter to proceed.
+                Type 'CONFIRM_GLOBAL_DELETE' (case-sensitive) and press Enter in the text box below to proceed.
             </p>
             <p>Anything else will abort.</p>
         """)
         display(confirm_html)
         
-        # Capture user input
-        global_confirm = widgets.Text(description="Confirm:", placeholder="CONFIRM_GLOBAL_DELETE")
-        display(global_confirm)
+        # Capture user input using a blocking loop with clear_output
+        global_confirm_input_widget = widgets.Text(
+            description="Confirm:", 
+            placeholder="CONFIRM_GLOBAL_DELETE",
+            layout=widgets.Layout(width='auto')
+        )
+        display(global_confirm_input_widget)
         
-        # Use an event to wait for input
-        event = widgets.Event(source=global_confirm, watched_attr='value')
-        def on_confirm_change(change):
-            event.set()
-        global_confirm.observe(on_confirm_change, names='value')
-        
-        # Wait for the user to type and press Enter
-        while not event.is_set():
-            time.sleep(0.1) # Give IPython time to update
-            
-        confirmation_input = global_confirm.value.strip()
+        # Use a non-blocking wait by checking the value in a loop
+        confirmation_input = ""
+        while confirmation_input == "":
+            time.sleep(0.1) # Short delay to prevent busy-waiting
+            confirmation_input = global_confirm_input_widget.value.strip()
+
+        # Clear the confirmation input widget after value is captured
+        global_confirm_input_widget.close()
+        clear_output(wait=True) # Clear the confirmation prompt output
 
         if confirmation_input == "CONFIRM_GLOBAL_DELETE":
-            print("\nProceeding with global deletion...")
+            with output: # Ensure subsequent prints go to the output widget
+                print("\nProceeding with global deletion...")
             HOME_PATH = Path.home() # Use Path.home() to target the studio root
 
             # Get the current notebook's filename reliably within the execution environment
@@ -134,37 +137,48 @@ def clean_all_except_notebook_and_main():
 
             EXCLUDE_LIST = []
             if notebook_path and notebook_path.exists():
-                EXCLUDE_LIST.append(notebook_path)
-                print(f"ℹ️ Protecting notebook: {notebook_path.name}")
+                EXCLUDE_LIST.append(notebook_path.resolve()) # Resolve to absolute path for consistent comparison
+                with output:
+                    print(f"ℹ️ Protecting notebook: {notebook_path.name}")
             if main_py_path.exists():
-                EXCLUDE_LIST.append(main_py_path)
-                print(f"ℹ️ Protecting main.py: {main_py_path.name}")
+                EXCLUDE_LIST.append(main_py_path.resolve()) # Resolve to absolute path
+                with output:
+                    print(f"ℹ️ Protecting main.py: {main_py_path.name}")
             
             deleted_count = 0
             skipped_count = 0
 
             # Iterate through contents of HOME_PATH and delete
+            with output:
+                print(f"\n--- Starting Comprehensive Deletion in {HOME_PATH} ---")
             for item in HOME_PATH.iterdir():
-                if item in EXCLUDE_LIST:
+                # Convert item to absolute path for consistent comparison with EXCLUDE_LIST
+                abs_item = item.resolve()
+                if abs_item in EXCLUDE_LIST:
                     skipped_count += 1
                     continue # Skip protected items
 
-                print(f"🗑️ Deleting: {item.name}...")
+                with output:
+                    print(f"🗑️ Deleting: {item.name}...")
                 try:
                     if item.is_dir():
                         shutil.rmtree(item)
                     else:
                         item.unlink() # Delete file
-                    print(f"✅ Deleted: {item.name}")
+                    with output:
+                        print(f"✅ Deleted: {item.name}")
                     deleted_count += 1
                 except Exception as e:
-                    print(f"❌ Error deleting {item.name}: {e}")
+                    with output:
+                        print(f"❌ Error deleting {item.name}: {e}")
             
-            print("\n--- Global Cleanup Process Complete ---")
-            print(f"Summary: {deleted_count} items deleted, {skipped_count} items skipped (protected).")
-            print("Please restart your runtime and run the notebook from the first cell for a fresh start.")
+            with output:
+                print("\n--- Global Cleanup Process Complete ---")
+                print(f"Summary: {deleted_count} items deleted, {skipped_count} items skipped (protected).")
+                print("Please restart your runtime and run the notebook from the first cell for a fresh start.")
         else:
-            print("\nGlobal deletion aborted by user.")
+            with output:
+                print("\nGlobal deletion aborted by user.")
     _update_memory_info()
 
 # --- END OF MODIFICATION ---
