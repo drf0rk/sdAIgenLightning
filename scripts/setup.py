@@ -14,7 +14,6 @@ import json
 import sys
 import os
 
-
 # Platform detection added for Lightning AI compatibility
 import os
 from pathlib import Path
@@ -60,32 +59,15 @@ else:
 SCR_PATH = HOME / 'ANXETY'
 SETTINGS_PATH = SCR_PATH / 'settings.json'
 
-# NEW: Explicitly set up the module folder very early for global imports
-# This ensures json_utils is discoverable before its global use.
-def setup_module_folder_early(scr_folder_early):
-    modules_folder_early = scr_folder_early / 'modules'
-    scripts_folder_early = scr_folder_early / 'scripts' # New line: define scripts folder
-
-    modules_folder_early.mkdir(parents=True, exist_ok=True)
-    scripts_folder_early.mkdir(parents=True, exist_ok=True) # New line: ensure scripts folder exists
-
-    if str(modules_folder_early) not in sys.path:
-        sys.path.insert(0, str(modules_folder_early))
-    if str(scripts_folder_early) not in sys.path: # New block: add scripts folder to sys.path
-        sys.path.insert(0, str(scripts_folder_early))
-
-
-setup_module_folder_early(SCR_PATH)
-
-# Now, it's safe to import json_utils globally
-import json_utils as js
-
+# Removed setup_module_folder_early and global import of json_utils.js
+# All necessary json operations are now inlined or use built-in json module
 
 nest_asyncio.apply()  # Async support for Jupyter
 
 
 # ===================== UTILITIES (JSON/FILE OPERATIONS) =====================
 
+# Inlined key_exists logic (previously from json_utils)
 def key_exists(filepath, key=None, value=None):
     """Check key/value in JSON file."""
     if not filepath.exists():
@@ -106,13 +88,43 @@ def key_exists(filepath, key=None, value=None):
         return (data == value) if value else True
     return False
 
+# This function is now the primary way to save/update settings for setup.py
+def save_data_to_json_nested(filepath, key_path, value):
+    """Save value to a JSON file at a nested key path, creating parent dictionaries as needed."""
+    try:
+        if Path(filepath).exists():
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+        else:
+            data = {}
+    except json.JSONDecodeError:
+        data = {} # Handle corrupted JSON
+
+    keys = key_path.split('.')
+    current_data = data
+    for i, k in enumerate(keys):
+        if i == len(keys) - 1: # Last key
+            current_data[k] = value
+        else:
+            if k not in current_data or not isinstance(current_data[k], dict):
+                current_data[k] = {}
+            current_data = current_data[k]
+    
+    Path(filepath).parent.mkdir(parents=True, exist_ok=True) # Ensure directory exists
+    with open(filepath, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
 def save_environment_to_json(SETTINGS_PATH, data):
     """Save environment data to a JSON file."""
     existing_data = {}
 
     if SETTINGS_PATH.exists():
-        with open(SETTINGS_PATH, 'r') as json_file:
-            existing_data = json.load(json_file)
+        try:
+            with open(SETTINGS_PATH, 'r') as json_file:
+                existing_data = json.load(json_file)
+        except json.JSONDecodeError:
+            existing_data = {} # Handle corrupted settings.json
 
     existing_data.update(data)
 
@@ -122,9 +134,12 @@ def save_environment_to_json(SETTINGS_PATH, data):
 def get_start_timer():
     """Get the start timer from settings or default to current time minus 5 seconds."""
     if SETTINGS_PATH.exists():
-        with open(SETTINGS_PATH, 'r') as f:
-            settings = json.load(f)
-            return settings.get('ENVIRONMENT', {}).get('start_timer', int(time.time() - 5))
+        try:
+            with open(SETTINGS_PATH, 'r') as f:
+                settings = json.load(f)
+                return settings.get('ENVIRONMENT', {}).get('start_timer', int(time.time() - 5))
+        except json.JSONDecodeError:
+            return int(time.time() - 5) # Default if JSON is corrupt
     return int(time.time() - 5)
 
 
@@ -139,13 +154,10 @@ def clear_module_cache(modules_folder):
     importlib.invalidate_caches()
 
 def setup_module_folder(scr_folder):
-    """Set up the module folder by clearing the cache and adding it to sys.path.
-    This function is kept for consistency with how modules are cleared/reloaded later.
-    The initial path addition is now handled by `setup_module_folder_early`.
-    """
+    """Set up the module folder by clearing the cache and adding it to sys.path."""
     clear_module_cache(scr_folder)
-    # The path should already be there from setup_module_folder_early, but this ensures it.
     modules_folder = scr_folder / 'modules'
+    modules_folder.mkdir(parents=True, exist_ok=True)
     if str(modules_folder) not in sys.path:
         sys.path.append(str(modules_folder))
 
@@ -318,7 +330,8 @@ def setup_storage():
 
 DRIVE_PATH = setup_storage() # Assigning the result of setup_storage to DRIVE_PATH
 # Fix: Save DRIVE_PATH to settings.json so other scripts can access it
-js.save(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
+# Use the inlined save_data_to_json_nested for this.
+save_data_to_json_nested(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
 
 
 ## ======================= DOWNLOAD LOGIC =====================
