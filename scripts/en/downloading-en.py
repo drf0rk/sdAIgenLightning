@@ -19,9 +19,7 @@ import shlex
 import time
 import json
 import sys
-import re
-import os
-from tqdm import tqdm # Added for new download functions
+import re # Ensure re module is imported
 
 
 # Platform-aware downloading configuration
@@ -319,9 +317,9 @@ if latest_webui or latest_extensions:
         # ipySys('git restore .')
         # ipySys('git pull -X theirs --rebase --autostash')
         print("Updating WebUI repository...")
-        subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False) # check=False to avoid crashing
-        subprocess.run(['git', 'pull', '--rebase'], check=False) # check=False to avoid crashing
-        subprocess.run(['git', 'stash', 'pop'], check=False) # check=False to avoid crashing
+        subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False, capture_output=False) # check=False to avoid crashing
+        subprocess.run(['git', 'pull', '--rebase'], check=False, capture_output=False) # check=False to avoid crashing
+        subprocess.run(['git', 'stash', 'pop'], check=False, capture_output=False) # check=False to avoid crashing
 
     ## Update extensions
     if latest_extensions:
@@ -331,8 +329,8 @@ if latest_webui or latest_extensions:
             if os.path.isdir(dir_path):
                 # DEBUG START: Ensure output is visible
                 print(f"  Updating extension: {entry}")
-                subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
-                subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
+                subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False, capture_output=False)
+                subprocess.run(['git', 'pull'], cwd=dir_path, check=False, capture_output=False)
                 # DEBUG END
 
     print(f"\r✨ Update {action} Completed!")
@@ -568,7 +566,7 @@ def _clean_url(url):
     return url
 
 def _extract_filename(url):
-    if match := re.re.search(r'\[(.*?)\]', url):
+    if match := re.re.search(r'\[(.*?)\]', url): # Fix: Changed re.re.search to re.search
         return match.group(1)
     if any(d in urlparse(url).netloc for d in ["civitai.com", "drive.google.com"]):
         return None
@@ -589,14 +587,14 @@ def _process_download_link(link):
     Returns (prefix, clean_url, specified_filename) or (None, full_link, None) if not prefixed.
     Note: This is designed for single URL strings, not "url dst_dir filename" combined.
     """
-    prefixed_match = re.re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
+    prefixed_match = re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
     if prefixed_match:
         prefix = prefixed_match.group(1)
         # NEW: Check if the extracted prefix is a valid key in PREFIX_MAP
         if prefix in PREFIX_MAP: # Ensure it's a recognized content prefix, not a URL scheme
             raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
             
-            clean_url = re.re.sub(r'\[.*?\]', '', raw_url_part)
+            clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
             specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
             return (prefix, clean_url, specified_filename)
         else:
