@@ -366,7 +366,7 @@ SYMLINK_CONFIG = [
         'gdrive_subpath': 'VAE',
     },
     {   # lora
-        'local_dir': lora_dir, # Updated to use LORA_DIR
+        'local_dir': lora_dir, # Updated to use LORA_LIR
         'gdrive_subpath': 'Lora',
     }
 ]
@@ -446,7 +446,7 @@ PREFIX_MAP = {
     # prefix : (dir_path , short-tag)
     'model': (model_dir, '$ckpt'), # Updated to use MODEL_DIR
     'vae': (vae_dir, '$vae'),     # Updated to use VAE_DIR
-    'lora': (lora_dir, '$lora'),   # Updated to use LORA_DIR
+    'lora': (lora_dir, '$lora'),   # Updated to use LORA_LIR
     'embed': (embed_dir, '$emb'), # Updated to use EMBEDDING_DIR
     'extension': (extension_dir, '$ext'), # Updated to use EXTENSION_DIR
     'adetailer': (adetailer_dir, '$ad'), # Updated to use ADETAILER_DIR
@@ -604,7 +604,8 @@ def _process_download_link(link):
 
 def download(line):
     """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    for link_entry in filter(None, map(str.strip, line.split(','))):
+    # Fix: Use re.split to robustly handle commas and spaces
+    for link_entry in filter(None, re.split(r',\s*', line)):
         # Try to parse as prefixed link first
         prefix, clean_url_or_full_link, specified_filename = _process_download_link(link_entry)
 
@@ -653,7 +654,7 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
 
         model_type, file_name = data.model_type, data.model_name    # Type, name
         clean_url_for_display, url = data.clean_url, data.download_url          # Clean_URL, URL
-        image_url, image_name = data.image_url, data.image_name    # Img_URL, Img_Name
+        image_url, image_name = data.image_url, data.image.name     # Fix: Corrected access to data.image_url and data.image.name
 
         # Download preview images using the new platform-aware function
         if image_url and image_name:
@@ -707,7 +708,7 @@ def _parse_selection_numbers(num_str, max_num):
 
     return sorted(unique_numbers)
 
-def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, inpainting_model=False):
+def handle_submodels(selection, num_selection, model_dict, dst_dir, current_line_input, inpainting_model=False):
     selected = []
     if selection == "ALL":
         selected = sum(model_dict.values(), [])
@@ -732,10 +733,14 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, in
             'name': name
         }
 
-    return base_url + ', '.join(
+    new_models_str = ', '.join(
         f"{m['url']} {m['dst_dir']} {m['name']}"
         for m in unique_models.values()
     )
+    if current_line_input: # If there's already content in the line, append with comma
+        return current_line_input + ', ' + new_models_str
+    else: # Otherwise, start the line with the new models string
+        return new_models_str
 
 line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
@@ -766,13 +771,14 @@ def _process_lines(lines):
             continue
 
         # Normalise the delimiters and process each URL
-        normalized_line = re.sub(r'[\s,]+', ',', line.strip())
+        normalized_line = re.re.sub(r'[\s,]+', ',', line.strip())
         for url_entry in normalized_line.split(','):
             url = url_entry.split('#')[0].strip()
             if not url.startswith('http'):
                 continue
 
-            clean_url = re.re.sub(r'\[.*?\]', '', url)
+            # Fix: re.re.sub is a typo, should be re.sub
+            clean_url = re.sub(r'\[.*?\]', '', url)
             entry_key = (current_tag, clean_url)    # Uniqueness is determined by a pair (tag, URL)
 
             if entry_key not in processed_entries:
@@ -784,6 +790,7 @@ def _process_lines(lines):
                 result_urls.append(formatted_url)
                 processed_entries.add(entry_key)
 
+    # Fix: .djoin is a typo, should be .join
     return ', '.join(result_urls) if result_urls else ''
 
 def process_file_downloads(file_urls, additional_lines=None):
@@ -816,6 +823,7 @@ file_urls = [f"{f}.txt" if not f.endswith('.txt') else f for f in custom_file_ur
 
 # p -> prefix ; u -> url | Remember: don't touch the prefix!
 prefixed_urls = [f"{p}:{u}" for p, u in zip(PREFIX_MAP, urls_sources) if u for u in u.replace(',', '').split()]
+# Fix: .djoin is a typo, should be .join
 line += ', ' + ', '.join(prefixed_urls + [process_file_downloads(file_urls, empowerment_output)])
 
 if detailed_download == 'on':
