@@ -1,6 +1,6 @@
 # ~ download.py | by ANXETY ~
 
-from webui_utils import handle_setup_timer    # WEBUI
+from webui_utils import handle_setup_timer, _set_webui_paths # WEBUI # ADDED _set_webui_paths
 from CivitaiAPI import CivitAiAPI             # CivitAI API
 from Manager import m_download                # Every Download
 import json_utils as js                       # JSON
@@ -19,9 +19,9 @@ import shlex
 import time
 import json
 import sys
-import re # Ensure re module is imported
-import os # Fix: Added import os
-from tqdm import tqdm # Added for new download functions
+import re 
+import os 
+from tqdm import tqdm 
 
 
 # Platform-aware downloading configuration
@@ -96,7 +96,7 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 LANG = js.read(SETTINGS_PATH, 'ENVIRONMENT.lang')
 ENV_NAME = js.read(SETTINGS_PATH, 'ENVIRONMENT.env_name')
 UI = js.read(SETTINGS_PATH, 'WEBUI.current')
-WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path', str(HOME / 'webui')) # Fix: Added default for WEBUI
+WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path', str(HOME / 'webui')) 
 
 
 # Text Colors (\033)
@@ -124,7 +124,6 @@ def install_dependencies(commands):
 def setup_venv(url):
     """Customize the virtual environment using the specified URL."""
     CD(HOME)
-    # url = "https://huggingface.co/NagisaNao/ANXETY/resolve/main/python31017-venv-torch251-cu121-C-fca.tar.lz4"
     fn = Path(url).name
 
     m_download(f"{url} {HOME} {fn}")
@@ -174,7 +173,7 @@ if not js.key_exists(SETTINGS_PATH, 'ENVIRONMENT.install_deps', True):
         ## Tunnels
         'localtunnel': "npm install -g localtunnel",
         'cloudflared': "wget -qO /usr/bin/cl https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64; chmod +x /usr/bin/cl",
-        'zrok': "wget -qO zrok_1.0.4_linux_amd64.tar.gz https://github.com/openziti/zrok/releases/download/v1.0.4/zrok_1.0.4_linux_amd64.tar.gz; tar -xzf zrok_1.0.4_linux_amd64.tar.gz -C /usr/bin; rm -f zrok_1.0.4_linux_amd64.tar.gz",
+        'zrok': "wget -qO zrok_1.0.4_linux_amd64.tar.gz https://github.com/openziti/zrok/releases/download/v1.0.4/zrok_1.0.4_linux_amd64_amd64.tar.gz; tar -xzf zrok_1.0.4_linux_amd64.tar.gz -C /usr/bin; rm -f zrok_1.0.4_linux_amd64.tar.gz",
         'ngrok': "wget -qO ngrok-v3-stable-linux-amd64.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz; tar -xzf ngrok-v3-stable-linux-amd64.tgz -C /usr/bin; rm -f ngrok-v3-stable-linux-amd64.tgz"
     }
 
@@ -214,11 +213,6 @@ if venv_needs_reinstall:
     # Update latest UI version...
     js.update(SETTINGS_PATH, 'WEBUI.latest', current_ui)
 
-# if not os.path.exists(VENV):
-#     print('♻️ Installing VENV, this will take some time...')
-#     setup_venv()
-#     clear_output()
-
 ## ================ loading settings V5 ==================
 
 def load_settings(path):
@@ -239,6 +233,19 @@ def load_settings(path):
 # Load settings
 settings = load_settings(SETTINGS_PATH)
 locals().update(settings)
+
+# --- START OF MODIFICATION ---
+# Force update WEBUI paths based on current UI selection.
+# This ensures that model_dir, vae_dir, etc., are correctly pointing to the shared location
+# before any downloads happen, regardless of widget interaction.
+print(f"🔄 Ensuring WebUI paths are configured for {UI}...")
+_set_webui_paths(UI) 
+
+# Re-load settings after forcing _set_webui_paths to ensure the latest paths are used.
+settings = load_settings(SETTINGS_PATH)
+locals().update(settings)
+# --- END OF MODIFICATION ---
+
 
 # Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
 DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
@@ -365,9 +372,6 @@ else:
 if latest_webui or latest_extensions:
     action = 'WebUI and Extensions' if latest_webui and latest_extensions else ('WebUI' if latest_webui else 'Extensions')
     print(f"⌚️ Update {action}...", end='')
-    # DEBUG START: Temporarily remove capture_output to see git command output
-    # with capture.capture_output(): # This line might have been commented out
-    # DEBUG END
     # Fix: Corrected indentation for git commands
     ipySys('git config --global user.email "you@example.com"')
     ipySys('git config --global user.name "Your Name"')
@@ -375,12 +379,10 @@ if latest_webui or latest_extensions:
     ## Update Webui
     if latest_webui:
         CD(WEBUI)
-        # ipySys('git restore .')
-        # ipySys('git pull -X theirs --rebase --autostash')
         print("Updating WebUI repository...")
-        subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False, capture_output=False) # check=False to avoid crashing
-        subprocess.run(['git', 'pull', '--rebase'], check=False, capture_output=False) # check=False to avoid crashing
-        subprocess.run(['git', 'stash', 'pop'], check=False, capture_output=False) # check=False to avoid crashing
+        subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False, capture_output=False) 
+        subprocess.run(['git', 'pull', '--rebase'], check=False, capture_output=False) 
+        subprocess.run(['git', 'stash', 'pop'], check=False, capture_output=False) 
 
     ## Update extensions
     if latest_extensions:
@@ -388,11 +390,9 @@ if latest_webui or latest_extensions:
         for entry in os.listdir(f"{WEBUI}/extensions"):
             dir_path = f"{WEBUI}/extensions/{entry}"
             if os.path.isdir(dir_path):
-                # DEBUG START: Ensure output is visible
                 print(f"  Updating extension: {entry}")
                 subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
                 subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
-                # DEBUG END
 
     print(f"\r✨ Update {action} Completed!")
 
@@ -415,29 +415,23 @@ if commit_hash:
     print(f"\r🔄 Switch complete! Current commit: {COL.B}{commit_hash}{COL.X}")
 
 
-# === Google Drive Mounting (Now handled by setup.py, removing redundant code) ===
-# The 'from google.colab import drive' and 'handle_gdrive' function are removed from here
-# as the main GDrive setup is now centralized in the setup.py
-
 # Configuration
-GD_BASE = str(DRIVE_PATH) # Use the dynamically determined DRIVE_PATH
+GD_BASE = str(DRIVE_PATH) 
 SYMLINK_CONFIG = [
     {   # model
-        'local_dir': model_dir, # Updated to use MODEL_DIR
+        'local_dir': model_dir, 
         'gdrive_subpath': 'Checkpoints',
     },
     {   # vae
-        'local_dir': vae_dir, # Updated to use VAE_DIR
+        'local_dir': vae_dir, 
         'gdrive_subpath': 'VAE',
     },
     {   # lora
-        'local_dir': lora_dir, # Updated to use LORA_LIR
+        'local_dir': lora_dir, 
         'gdrive_subpath': 'Lora',
     }
 ]
 
-# The create_symlink function is still needed if symlinks are created here
-# but the overall handle_gdrive logic is gone.
 def create_symlink(src_path, gdrive_path, log=False):
     """Create symbolic link with content migration and cleanup"""
     try:
@@ -474,9 +468,6 @@ def create_symlink(src_path, gdrive_path, log=False):
     except Exception as e:
         print(f"Error processing {src_path}: {str(e)}")
 
-# Removed the call to handle_gdrive(mountGDrive) as it is no longer needed here.
-
-
 # Get XL or 1.5 models list
 ## model_list | vae_list | controlnet_list
 model_files = '_xl-models-data.py' if XL_models else '_models-data.py'
@@ -487,36 +478,31 @@ with open(f"{SCRIPTS}/{model_files}") as f:
 try:
     with open(f"{SCRIPTS}/_loras-data.py") as f:
         lora_data_content = f.read()
-    exec(lora_data_content, globals(), globals()) # Execute in global scope
-    # Now lora_data should be available
+    exec(lora_data_content, globals(), globals()) 
 except FileNotFoundError:
     print(f"Error: _loras-data.py not found at {SCRIPTS}/_loras-data.py. Please ensure it is downloaded.")
-    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} # Provide empty default
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} 
 except Exception as e:
     print(f"Error loading _loras-data.py: {e}")
-    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} # Provide empty default
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} 
 
 # Determine which lora list to use based on XL_models setting
-# This needs to be done before handle_submodels for lora is called
 lora_list_to_use = lora_data.get('sdxl_loras', {}) if XL_models else lora_data.get('sd15_loras', {})
-# Ensure lora_list_to_use is an actual dictionary, not None or missing key, then get keys
 if not isinstance(lora_list_to_use, dict):
     lora_list_to_use = {}
 
-## Downloading model and stuff | oh~ Hey! If you're freaked out by that code too, don't worry, me too!
 print('📦 Downloading models and stuff...', end='')
 
 extension_repo = []
 PREFIX_MAP = {
-    # prefix : (dir_path , short-tag)
-    'model': (model_dir, '$ckpt'), # Updated to use MODEL_DIR
-    'vae': (vae_dir, '$vae'),     # Updated to use VAE_DIR
-    'lora': (lora_dir, '$lora'),   # Updated to use LORA_LIR
-    'embed': (embed_dir, '$emb'), # Updated to use EMBEDDING_DIR
-    'extension': (extension_dir, '$ext'), # Updated to use EXTENSION_DIR
-    'adetailer': (adetailer_dir, '$ad'), # Updated to use ADETAILER_DIR
-    'control': (control_dir, '$cnet'), # Updated to use CONTROLNET_DIR
-    'upscale': (upscale_dir, '$ups'), # Updated to use UPSCALE_DIR
+    'model': (model_dir, '$ckpt'), 
+    'vae': (vae_dir, '$vae'),     
+    'lora': (lora_dir, '$lora'),   
+    'embed': (embed_dir, '$emb'), 
+    'extension': (extension_dir, '$ext'), 
+    'adetailer': (adetailer_dir, '$ad'), 
+    'control': (control_dir, '$cnet'), 
+    'upscale': (upscale_dir, '$ups'), 
     # Other
     'clip': (clip_dir, '$clip'),
     'unet': (unet_dir, '$unet'),
@@ -527,68 +513,6 @@ PREFIX_MAP = {
 }
 for dir_path, _ in PREFIX_MAP.values():
     os.makedirs(dir_path, exist_ok=True)
-
-
-# New platform-aware download functions as per comprehensive_patches.md
-def download_file_platform_aware(url, destination, description="Downloading"):
-    """Platform-aware file download with optimizations"""
-    import requests
-    from tqdm import tqdm
-
-    config = DOWNLOAD_CONFIG
-
-    try:
-        # Create destination directory
-        Path(destination).parent.mkdir(parents=True, exist_ok=True)
-
-        # Download with platform-specific settings
-        response = requests.get(
-            url,
-            stream=True,
-            timeout=config['timeout'],
-            verify=config['verify_ssl']
-        )
-        response.raise_for_status()
-
-        total_size = int(response.headers.get('content-length', 0))
-
-        with open(destination, 'wb') as file, tqdm(
-            desc=description,
-            total=total_size,
-            unit='B',
-            unit_scale=True,
-            unit_divisor=1024,
-        ) as progress_bar:
-            for chunk in response.iter_content(chunk_size=config['chunk_size']):
-                if chunk:
-                    file.write(chunk)
-                    progress_bar.update(len(chunk))
-
-        return True
-
-    except Exception as e:
-        print(f"Download failed: {e}")
-        return False
-
-def download_model_platform_aware(model_info):
-    """Download model with platform-specific optimizations"""
-    model_name = model_info['name']
-    model_url = model_info['url']
-
-    # Use platform-specific model directory
-    destination = model_dir / model_name
-
-    print(f"📥 Downloading {model_name} to {destination}")
-
-    if download_file_platform_aware(model_url, destination, f"Downloading {model_name}"):
-        print(f"✅ Successfully downloaded {model_name}")
-        return True
-    else:
-        print(f"❌ Failed to download {model_name}")
-        return False
-
-
-''' Formatted Info Output '''
 
 def _center_text(text, terminal_width=45):
     padding = (terminal_width - len(text)) // 2
@@ -610,11 +534,8 @@ def format_output(url, dst_dir, file_name, image_url=None, image_name=None):
     print(f"{COL.Y}{'SAVE DIR:':<12}{COL.B}{dst_dir}")
     print(f"{COL.Y}{'FILE NAME:':<12}{COL.B}{file_name}{COL.X}")
     if 'civitai' in url and image_url:
-        # Corrected line for the f-string syntax error
         print(f"{COL.G}{'[Preview]:':<12}{COL.X}{image_name} → {image_url}")
     print()
-
-''' Main Download Code '''
 
 def _clean_url(url):
     url_cleaners = {
@@ -641,75 +562,39 @@ def _unpack_zips():
                 zf.extractall(zip_file.with_suffix(''))
             zip_file.unlink()
 
-# Download Core (Modified to use new platform-aware download functions)
+# Download Core
 
 def _process_download_link(link):
-    """Parses a download link, cleaning the URL and extracting a filename if present.
-    Returns (prefix, clean_url, specified_filename) or (None, full_link, None) if not prefixed.
-    Note: This is designed for single URL strings, not "url dst_dir filename" combined.
-    """
-    prefixed_match = re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
-    if prefixed_match:
-        prefix = prefixed_match.group(1)
-        # NEW: Check if the extracted prefix is a valid key in PREFIX_MAP
-        if prefix in PREFIX_MAP: # Ensure it's a recognized content prefix, not a URL scheme
-            raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
-            
-            clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
-            specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
-            return (prefix, clean_url, specified_filename)
-        else:
-            # If the extracted prefix is not a known content prefix (e.g., 'https'),
-            # treat the entire link as a non-prefixed URL.
-            return (None, link, None)
-    else:
-        # No colon found, or doesn't match prefix: format
-        return (None, link, None)
-
+    """Processes a download link, splitting prefix, URL, and filename."""
+    link = _clean_url(link)
+    if ':' in link:
+        prefix, path = link.split(':', 1)
+        if prefix in PREFIX_MAP:
+            return prefix, re.sub(r'\[.*?\]', '', path), _extract_filename(path)
+    return None, link, None
 
 def download(line):
     """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    # Fix: Use re.split to robustly handle commas and spaces
-    for link_entry in filter(None, re.split(r',\s*', line)):
-        # Try to parse as prefixed link first
-        prefix, clean_url_or_full_link, specified_filename = _process_download_link(link_entry)
+    for link in filter(None, map(str.strip, line.split(','))):
+        prefix, url, filename = _process_download_link(link)
 
-        if prefix: # This means it was a "prefix:URL[filename]" format
+        if prefix:
             dir_path, _ = PREFIX_MAP[prefix]
             if prefix == 'extension':
-                extension_repo.append((clean_url_or_full_link, specified_filename))
+                extension_repo.append((url, filename))
                 continue
             try:
-                manual_download(clean_url_or_full_link, dir_path, specified_filename, prefix)
+                manual_download(url, dir_path, filename, prefix)
             except Exception as e:
-                print(f"\n> Download error for prefixed link '{link_entry}': {e}")
-        else: # Not a prefixed link, assume it's "url dst_dir filename" format, or just a raw URL
-            parts = link_entry.split()
-            if len(parts) >= 3:
-                # Format: "url dst_dir filename"
-                url_to_download = parts[0]
-                dst_dir_path = Path(parts[1]) # This is the full path already
-                file_name_explicit = parts[2]
-                try:
-                    manual_download(url_to_download, dst_dir_path, file_name_explicit)
-                except Exception as e:
-                    print(f"\n> Download error for explicit link '{link_entry}': {e}")
-            elif len(parts) == 1: # Just a raw URL provided without explicit destination or name
-                url_to_download = parts[0]
-                default_dst_dir = model_dir # Fallback to model_dir for raw URLs
-                default_file_name = _extract_filename(url_to_download)
-                try:
-                    manual_download(url_to_download, default_dst_dir, default_file_name)
-                except Exception as e:
-                    print(f"\n> Download error for raw URL '{link_entry}': {e}")
-            else:
-                print(f"\n> Skipping invalid link format: '{link_entry}'")
+                print(f"\n> Download error: {e}")
+        else:
+            url, dst_dir, file_name = url.split()
+            manual_download(url, dst_dir, file_name)
 
     _unpack_zips()
 
-# manual_download function is updated to use download_file_platform_aware internally
 def manual_download(url, dst_dir, file_name=None, prefix=None):
-    clean_url_for_display = url # Renamed to avoid confusion with the internal `clean_url` in _process_download_link
+    clean_url = url
     image_url, image_name = None, None
 
     if 'civitai' in url:
@@ -718,28 +603,26 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
             return
 
         model_type, file_name = data.model_type, data.model_name    # Type, name
-        clean_url_for_display, url = data.clean_url, data.download_url          # Clean_URL, URL
-        image_url, image_name = data.image_url, data.image.name     # Fix: Corrected access to data.image_url and data.image.name
+        clean_url, url = data.clean_url, data.download_url          # Clean_URL, URL
+        image_url, image_name = data.image_url, data.image_name     # Img_URL, Img_Name
 
-        # Download preview images using the new platform-aware function
+        # Download preview images
         if image_url and image_name:
-            if not download_file_platform_aware(image_url, Path(dst_dir) / image_name, f"Downloading preview {image_name}"):
-                print(f"Failed to download preview image {image_url}")
+            m_download(f"{image_url} {dst_dir} {image_name}")
 
     elif any(s in url for s in ('github', 'huggingface.co')):
         if file_name and '.' not in file_name:
-            file_name += f".{clean_url_for_display.split('.')[-1]}" # Use clean_url_for_display here
+            file_name += f".{clean_url.split('.')[-1]}"
 
     # Formatted info output
-    format_output(clean_url_for_display, dst_dir, file_name, image_url, image_name)
+    format_output(clean_url, dst_dir, file_name, image_url, image_name)
 
-    # Downloading using the new platform-aware function
-    if not download_file_platform_aware(url, Path(dst_dir) / file_name if file_name else Path(dst_dir) / Path(urlparse(url).path).name, f"Downloading {file_name or Path(urlparse(url).path).name}"):
-        print(f"Failed to download {url}")
-
+    # Downloading
+    m_download(f"{url} {dst_dir} {file_name or ''}", log=True)
 
 ''' SubModels - Added URLs '''
 
+# Separation of merged numbers
 def _parse_selection_numbers(num_str, max_num):
     """Split a string of numbers into unique integers, considering max_num as the upper limit."""
     num_str = num_str.replace(',', ' ').strip()
@@ -750,15 +633,18 @@ def _parse_selection_numbers(num_str, max_num):
         if not part.isdigit():
             continue
 
+        # Check if the entire part is a valid number
         part_int = int(part)
         if part_int <= max_num:
             unique_numbers.add(part_int)
-            continue
+            continue  # No need to split further
 
+        # Split the part into valid numbers starting from the longest possible
         current_position = 0
         part_len = len(part)
         while current_position < part_len:
             found = False
+            # Try lengths from max_length down to 1
             for length in range(min(max_length, part_len - current_position), 0, -1):
                 substring = part[current_position:current_position + length]
                 if substring.isdigit():
@@ -769,11 +655,12 @@ def _parse_selection_numbers(num_str, max_num):
                         found = True
                         break
             if not found:
+                # Move to the next character if no valid number found
                 current_position += 1
 
     return sorted(unique_numbers)
 
-def handle_submodels(selection, num_selection, model_dict, dst_dir, current_line_input, inpainting_model=False):
+def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, inpainting_model=False):
     selected = []
     if selection == "ALL":
         selected = sum(model_dict.values(), [])
@@ -798,22 +685,15 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, current_line
             'name': name
         }
 
-    new_models_str = ', '.join(
+    return base_url + ', '.join(
         f"{m['url']} {m['dst_dir']} {m['name']}"
         for m in unique_models.values()
     )
-    if current_line_input: # If there's already content in the line, append with comma
-        return current_line_input + ', ' + new_models_str
-    else: # Otherwise, start the line with the new models string
-        return new_models_str
 
 line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
 line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
 line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
-# Corrected: Now lora_list_to_use is defined globally from the exec block
-line = handle_submodels(lora, lora_num, lora_list_to_use, str(lora_dir), line)
-
 
 ''' File.txt - added urls '''
 
@@ -842,7 +722,6 @@ def _process_lines(lines):
             if not url.startswith('http'):
                 continue
 
-            # Fix: re.re.sub is a typo, should be re.sub
             clean_url = re.sub(r'\[.*?\]', '', url)
             entry_key = (current_tag, clean_url)    # Uniqueness is determined by a pair (tag, URL)
 
@@ -855,7 +734,6 @@ def _process_lines(lines):
                 result_urls.append(formatted_url)
                 processed_entries.add(entry_key)
 
-    # Fix: .djoin is a typo, should be .join
     return ', '.join(result_urls) if result_urls else ''
 
 def process_file_downloads(file_urls, additional_lines=None):
@@ -888,7 +766,6 @@ file_urls = [f"{f}.txt" if not f.endswith('.txt') else f for f in custom_file_ur
 
 # p -> prefix ; u -> url | Remember: don't touch the prefix!
 prefixed_urls = [f"{p}:{u}" for p, u in zip(PREFIX_MAP, urls_sources) if u for u in u.replace(',', '').split()]
-# Fix: .djoin is a typo, should be .join
 line += ', ' + ', '.join(prefixed_urls + [process_file_downloads(file_urls, empowerment_output)])
 
 if detailed_download == 'on':
@@ -941,3 +818,4 @@ if UI == 'ComfyUI':
 
 ## List Models and stuff
 ipyRun('run', f"{SCRIPTS}/download-result.py")
+
