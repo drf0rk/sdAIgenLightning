@@ -148,22 +148,24 @@ def create_expandable_button(text, url):
     </a>
     ''')
 
-def read_model_data(file_path, data_type):
-    """Reads model, VAE, ControlNet, or LoRA data from the specified file."""
-    type_map = {
-        'model': ('model_list', ['none']),
-        'vae': ('vae_list', ['none', 'ALL']),
-        'cnet': ('controlnet_list', ['none', 'ALL']),
-        'lora': ('lora_list', ['none', 'ALL']) # Added lora type
-    }
-    key, prefixes = type_map[data_type]
+# Modified read_model_data to be more generic for data files
+def read_model_data(file_path, data_key_in_file, prefixes=['none']):
+    """Reads data from the specified file based on a key within that file."""
     local_vars = {}
-
     with open(file_path) as f:
         exec(f.read(), {}, local_vars)
+    
+    # Safely get the nested dictionary if data_key_in_file is like 'lora_data.sd15_loras'
+    data_dict = local_vars
+    for key_part in data_key_in_file.split('.'):
+        data_dict = data_dict.get(key_part, {})
+        if not isinstance(data_dict, dict): # Handle cases where a key part might not lead to a dict
+            data_dict = {}
+            break
 
-    names = list(local_vars[key].keys())
+    names = list(data_dict.keys())
     return prefixes + names
+
 
 webui_selection = {
     'A1111':   "--xformers --no-half-vae",
@@ -181,7 +183,7 @@ HR = widgets.HTML('<hr>')
 # --- MODEL ---
 """Create model selection widgets."""
 model_header = factory.create_header('Model Selection')
-model_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'model')
+model_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'model_list') # Updated key here
 model_widget = factory.create_dropdown(model_options, 'Model:', '4. Counterfeit [Anime] [V3] + INP')
 model_num_widget = factory.create_text('Model Number:', '', 'Enter model numbers for download.')
 inpainting_model_widget = factory.create_checkbox('Inpainting Models', False, class_names=['inpaint'], layout={'width': '25%'})
@@ -192,15 +194,15 @@ switch_model_widget = factory.create_hbox([inpainting_model_widget, XL_models_wi
 # --- VAE ---
 """Create VAE selection widgets."""
 vae_header = factory.create_header('VAE Selection')
-vae_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'vae')
+vae_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'vae_list') # Updated key here
 vae_widget = factory.create_dropdown(vae_options, 'Vae:', '3. Blessed2.vae')
 vae_num_widget = factory.create_text('Vae Number:', '', 'Enter vae numbers for download.')
 
 # --- LORA (NEW SECTION) ---
 """Create LoRA selection widgets."""
 lora_header = factory.create_header('LoRA Selection')
-# Now, _loras_data.py is accessed directly via its path and exec'd within read_model_data
-lora_options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora')
+# Initial load of LoRA options (defaults to SD 1.5 LoRAs)
+lora_options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora_data.sd15_loras')
 lora_widget = factory.create_dropdown(lora_options, 'LoRA:', 'none')
 lora_num_widget = factory.create_text('LoRA Number:', '', 'Enter LoRA numbers for download.')
 
@@ -224,7 +226,7 @@ choose_changes_widget = factory.create_hbox(
     layout={'justify_content': 'space-between'}
 )
 
-controlnet_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'cnet')
+controlnet_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'controlnet_list') # Updated key here
 controlnet_widget = factory.create_dropdown(controlnet_options, 'ControlNet:', 'none')
 controlnet_num_widget = factory.create_text('ControlNet Number:', '', 'Enter ControlNet numbers for download.')
 commit_hash_widget = factory.create_text('Commit Hash:', '', 'Switching between branches or commits.')
@@ -244,7 +246,7 @@ ngrok_widget = factory.create_hbox([ngrok_token_widget, ngrok_button])
 
 # Moved Zrok widget definition before additional_widget_list
 zrok_token_widget = factory.create_text('Zrok Token:')
-zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUAvrHSuQyHTDuLy36WpU')
+zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU')
 zrok_widget = factory.create_hbox([zrok_token_widget, zrok_button])
 # HARDCODED TOKENS END HERE
 
@@ -262,8 +264,8 @@ additional_widget_list = [
     HR,
     controlnet_widget, controlnet_num_widget,
     commit_hash_widget,
-    lora_header, lora_widget, lora_num_widget, # Added LoRA widgets
-    HR, # Added HR for separation
+    # Removed redundant LoRA widgets from here, they are now in their own box (lora_box)
+    HR,
     civitai_widget, huggingface_widget, zrok_widget, ngrok_widget,
     HR,
     # commandline_arguments_widget,
@@ -399,19 +401,22 @@ def update_XL_options(change, widget):
         False: ('4. Counterfeit [Anime] [V3] + INP', '3. Blessed2.vae', 'none')    # SD 1.5 models
     }
 
-    # Get data - MODELs | VAEs | CNETs | LoRAs
-    data_file = '_xl-models-data.py' if selected else '_models-data.py'
-    model_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'model')
-    vae_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'vae')
-    controlnet_widget.options = read_model_data(f"{SCRIPTS}/{data_file}", 'cnet')
-    # For LoRA, it always reads from _loras-data.py, so no change based on XL_models
-    # lora_widget.options = read_model_data(f"{SCRIPTS}/_loras-data.py", 'lora')
+    # Get data - MODELs | VAEs | CNETs
+    # Update main model, VAE, ControlNet options based on SDXL checkbox
+    model_data_file = f"{SCRIPTS}/_xl-models-data.py" if selected else f"{SCRIPTS}/_models-data.py"
+    model_widget.options = read_model_data(model_data_file, 'model_list')
+    vae_widget.options = read_model_data(model_data_file, 'vae_list')
+    controlnet_widget.options = read_model_data(model_data_file, 'controlnet_list')
+
+    # Update LoRA options based on SDXL checkbox
+    lora_data_key = 'lora_data.sdxl_loras' if selected else 'lora_data.sd15_loras'
+    lora_widget.options = read_model_data(f"{SCRIPTS}/_loras-data.py", lora_data_key)
 
 
     # Set default values from the dictionary
     model_widget.value, vae_widget.value, controlnet_widget.value = default_model_values[selected]
     # LoRA default value
-    # lora_widget.value = 'none'
+    lora_widget.value = 'none' # Reset LoRA selection on model type change
 
 
 # Callback functions for updating widgets
