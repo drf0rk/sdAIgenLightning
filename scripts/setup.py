@@ -34,6 +34,7 @@ def detect_platform():
         os.environ.get('LIGHTNING_AI') or
         os.path.exists('/teamspace') or
         'lightning' in os.environ.get('PWD', '').lower() or
+        'studios' in os.environ.get('PWD', '').lower() or
         'lightning' in str(Path.home()).lower()
     ):
         return 'lightning'
@@ -292,6 +293,10 @@ def setup_storage():
         return HOME
 
 DRIVE_PATH = setup_storage() # Assigning the result of setup_storage to DRIVE_PATH
+# Fix: Save DRIVE_PATH to settings.json so other scripts can access it
+# Assuming `js` (json_utils) is available, which it is globally in setup.py
+import json_utils as js # Ensure js is imported here for safety, though it is usually global
+js.save(SETTINGS_PATH, 'ENVIRONMENT.gdrive_path', str(DRIVE_PATH))
 
 
 ## ======================= DOWNLOAD LOGIC =====================
