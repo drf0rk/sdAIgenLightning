@@ -64,9 +64,16 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 # This ensures json_utils is discoverable before its global use.
 def setup_module_folder_early(scr_folder_early):
     modules_folder_early = scr_folder_early / 'modules'
+    scripts_folder_early = scr_folder_early / 'scripts' # New line: define scripts folder
+
     modules_folder_early.mkdir(parents=True, exist_ok=True)
+    scripts_folder_early.mkdir(parents=True, exist_ok=True) # New line: ensure scripts folder exists
+
     if str(modules_folder_early) not in sys.path:
-        sys.path.insert(0, str(modules_folder_early)) # Use insert(0) to prioritize
+        sys.path.insert(0, str(modules_folder_early))
+    if str(scripts_folder_early) not in sys.path: # New block: add scripts folder to sys.path
+        sys.path.insert(0, str(scripts_folder_early))
+
 
 setup_module_folder_early(SCR_PATH)
 
