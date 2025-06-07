@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 
 # --- START OF MODIFICATION (Version Tracking) ---
-DOWNLOADER_VERSION = "2025.06.08.3_simplified_model_handling" # Example Version:YYYY.MM.DD.Iteration_Description
+DOWNLOADER_VERSION = "2025.06.09.1_structured_download_entries" # Example Version:YYYY.MM.DD.Iteration_Description
 # --- END OF MODIFICATION (Version Tracking) ---
 
 # Platform-aware downloading configuration
@@ -651,7 +651,7 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
         # This fixes the corruption as data.model_name should be clean
         final_file_name = data.model_name if data.model_name else file_name 
         clean_url_for_display, url = data.clean_url, data.download_url          
-        image_url, image_name = data.image_url, data.image_name     
+        image_url, image_name = data.image_url, data.image.name     
 
         # Download preview images
         if image_url and image_name:
@@ -748,15 +748,17 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir_obj, inpainti
         }
 
     # --- START OF MODIFICATION ---
-    # Return a list of explicitly formatted download strings, not a comma-separated string to concatenate
-    formatted_download_entries = []
+    # Return a list of explicit dictionaries for clarity and robust parsing
+    # This aligns with the original intent of m_download expecting url, dst_dir, filename
+    processed_models = []
     for m in unique_models.values():
         filename = m['name'] if m['name'] else _extract_filename(m['url'])
-        
-        # Original simple format from downloading-en(1).py that works with m_download
-        formatted_download_entries.append(f"{m['url']} {m['dst_dir']} {filename}")
-
-    return formatted_download_entries # Return list of strings
+        processed_models.append({
+            'url': m['url'],
+            'dst_dir': Path(m['dst_dir']), # Ensure Path object for consistency
+            'file_name': filename
+        })
+    return processed_models # Return list of dictionaries
     # --- END OF MODIFICATION ---
 
 # Initialize line_entries as an empty list to collect individual download entries
@@ -819,18 +821,18 @@ def _process_lines(lines):
                 filename = _extract_filename(url_entry)
                 
                 # --- START OF MODIFICATION ---
-                # Format: "prefix:url[filename]" for cleaner parsing in `download`
-                # This ensures explicit prefix and filename handling for file downloads
-                if filename:
-                    formatted_url = f"{current_tag}:{clean_url}[{filename}]"
-                else:
-                    formatted_url = f"{current_tag}:{clean_url}" 
+                # Return dictionary for consistency with handle_submodels output
+                target_dir = PREFIX_MAP.get(current_tag, (model_dir, ''))[0] # Fallback to model_dir
+                result_urls.append({
+                    'url': clean_url,
+                    'dst_dir': target_dir, # Ensure Path object
+                    'file_name': filename
+                })
                 # --- END OF MODIFICATION ---
 
-                result_urls.append(formatted_url)
                 processed_entries.add(entry_key)
 
-    return result_urls # Return list of strings
+    return result_urls # Return list of dictionaries
 
 
 def process_file_downloads(file_urls, additional_lines=None):
@@ -863,8 +865,8 @@ file_urls = [f"{f}.txt" if not f.endswith('.txt') else f for f in custom_file_ur
 
 # --- START OF MODIFICATION ---
 # Collect all file download entries into line_entries list
-# Ensure the format is "prefix:url[filename]" for consistency
-filtered_prefixed_urls = []
+# Ensure the format is a list of dictionaries, consistent with handle_submodels
+filtered_prefixed_urls_as_dicts = []
 for idx, url_source in enumerate(urls_sources):
     if url_source:
         prefix_key = list(PREFIX_MAP.keys())[idx] 
@@ -875,27 +877,28 @@ for idx, url_source in enumerate(urls_sources):
                 filename_from_url = _extract_filename(single_url)
                 clean_single_url = re.sub(r'\[.*?\]', '', single_url).strip()
                 
-                if filename_from_url:
-                    formatted_entry = f"{prefix_key}:{clean_single_url}[{filename_from_url}]"
-                else:
-                    formatted_entry = f"{prefix_key}:{clean_single_url}"
-                filtered_prefixed_urls.append(formatted_entry)
+                filtered_prefixed_urls_as_dicts.append({
+                    'url': clean_single_url,
+                    'dst_dir': target_dir, # Ensure Path object
+                    'file_name': filename_from_url
+                })
 
-line_entries.extend(filtered_prefixed_urls)
+line_entries.extend(filtered_prefixed_urls_as_dicts)
 line_entries.extend(process_file_downloads(file_urls, empowerment_output))
 
-# Final string to pass to download function, joining all collected entries
-line = ', '.join(line_entries)
+# The `line` variable is now a list of dictionaries, not a string.
+# The `download` function must be refactored to accept this list.
+# The `download` function's signature and internal loop are changed below.
 # --- END OF MODIFICATION ---
 
 
 if detailed_download == 'on':
     print(f"\n\n{COL.Y}# ====== Detailed Download ====== #\n{COL.X}")
-    download(line)
+    download(line_entries) # Pass the list of dictionaries
     print(f"\n{COL.Y}# =============================== #\n{COL.X}")
 else:
     with capture.capture_output():
-        download(line)
+        download(line_entries) # Pass the list of dictionaries
 
 print('\r🏁 Download Complete!' + ' '*15)
 
