@@ -21,6 +21,7 @@ import json
 import sys
 import re # Ensure re module is imported
 import os # Fix: Added import os
+from tqdm import tqdm # Added for new download functions
 
 
 # Platform-aware downloading configuration
