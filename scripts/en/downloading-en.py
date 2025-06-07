@@ -307,32 +307,33 @@ if latest_webui or latest_extensions:
     action = 'WebUI and Extensions' if latest_webui and latest_extensions else ('WebUI' if latest_webui else 'Extensions')
     print(f"⌚️ Update {action}...", end='')
     # DEBUG START: Temporarily remove capture_output to see git command output
-    # with capture.capture_output():
+    # with capture.capture_output(): # This line might have been commented out
     # DEBUG END
-        ipySys('git config --global user.email "you@example.com"')
-        ipySys('git config --global user.name "Your Name"')
+    # Fix: Corrected indentation for git commands
+    ipySys('git config --global user.email "you@example.com"')
+    ipySys('git config --global user.name "Your Name"')
 
-        ## Update Webui
-        if latest_webui:
-            CD(WEBUI)
-            # ipySys('git restore .')
-            # ipySys('git pull -X theirs --rebase --autostash')
-            print("Updating WebUI repository...")
-            subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False) # check=False to avoid crashing
-            subprocess.run(['git', 'pull', '--rebase'], check=False) # check=False to avoid crashing
-            subprocess.run(['git', 'stash', 'pop'], check=False) # check=False to avoid crashing
+    ## Update Webui
+    if latest_webui:
+        CD(WEBUI)
+        # ipySys('git restore .')
+        # ipySys('git pull -X theirs --rebase --autostash')
+        print("Updating WebUI repository...")
+        subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False) # check=False to avoid crashing
+        subprocess.run(['git', 'pull', '--rebase'], check=False) # check=False to avoid crashing
+        subprocess.run(['git', 'stash', 'pop'], check=False) # check=False to avoid crashing
 
-        ## Update extensions
-        if latest_extensions:
-            print("Updating extensions...")
-            for entry in os.listdir(f"{WEBUI}/extensions"):
-                dir_path = f"{WEBUI}/extensions/{entry}"
-                if os.path.isdir(dir_path):
-                    # DEBUG START: Ensure output is visible
-                    print(f"  Updating extension: {entry}")
-                    subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
-                    subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
-                    # DEBUG END
+    ## Update extensions
+    if latest_extensions:
+        print("Updating extensions...")
+        for entry in os.listdir(f"{WEBUI}/extensions"):
+            dir_path = f"{WEBUI}/extensions/{entry}"
+            if os.path.isdir(dir_path):
+                # DEBUG START: Ensure output is visible
+                print(f"  Updating extension: {entry}")
+                subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
+                subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
+                # DEBUG END
 
     print(f"\r✨ Update {action} Completed!")
 
@@ -567,7 +568,7 @@ def _clean_url(url):
     return url
 
 def _extract_filename(url):
-    if match := re.search(r'\[(.*?)\]', url):
+    if match := re.re.search(r'\[(.*?)\]', url):
         return match.group(1)
     if any(d in urlparse(url).netloc for d in ["civitai.com", "drive.google.com"]):
         return None
@@ -588,14 +589,14 @@ def _process_download_link(link):
     Returns (prefix, clean_url, specified_filename) or (None, full_link, None) if not prefixed.
     Note: This is designed for single URL strings, not "url dst_dir filename" combined.
     """
-    prefixed_match = re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
+    prefixed_match = re.re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
     if prefixed_match:
         prefix = prefixed_match.group(1)
         # NEW: Check if the extracted prefix is a valid key in PREFIX_MAP
         if prefix in PREFIX_MAP: # Ensure it's a recognized content prefix, not a URL scheme
             raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
             
-            clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
+            clean_url = re.re.sub(r'\[.*?\]', '', raw_url_part)
             specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
             return (prefix, clean_url, specified_filename)
         else:
