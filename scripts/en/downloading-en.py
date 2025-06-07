@@ -70,6 +70,7 @@ def get_download_config():
             'chunk_size': 8 * 1024 * 1024,
             'timeout': 600,
             'retries': 2,
+            'verify_ssl': True,
             'use_aria2': False
         }
 
@@ -338,10 +339,9 @@ if commit_hash:
     print(f"\r🔄 Switch complete! Current commit: {COL.B}{commit_hash}{COL.X}")
 
 
-# === Google Drive Mounting | EXCLUSIVE for Colab ===
-# This section remains largely as is, as setup.py is now handling the core GDrive/Storage setup
-from google.colab import drive
-mountGDrive = js.read(SETTINGS_PATH, 'mountGDrive')  # Mount/unmount flag
+# === Google Drive Mounting (Now handled by setup.py, removing redundant code) ===
+# The 'from google.colab import drive' and 'handle_gdrive' function are removed from here
+# as the main GDrive setup is now centralized in setup.py
 
 # Configuration
 GD_BASE = str(DRIVE_PATH) # Use the dynamically determined DRIVE_PATH
@@ -360,6 +360,8 @@ SYMLINK_CONFIG = [
     }
 ]
 
+# The create_symlink function is still needed if symlinks are created here
+# but the overall handle_gdrive logic is gone.
 def create_symlink(src_path, gdrive_path, log=False):
     """Create symbolic link with content migration and cleanup"""
     try:
@@ -396,66 +398,7 @@ def create_symlink(src_path, gdrive_path, log=False):
     except Exception as e:
         print(f"Error processing {src_path}: {str(e)}")
 
-def handle_gdrive(mount_flag, log=False):
-    """Main handler for Google Drive mounting and symlink management"""
-    if mount_flag:
-        if os.path.exists(str(DRIVE_PATH)): # Using DRIVE_PATH which is now set by setup_storage
-            print("🎉 Google Drive is connected~")
-        else:
-            try:
-                print("⏳ Mounting Google Drive...", end='')
-                with capture.capture_output():
-                    drive.mount('/content/drive')
-                print("\r🚀 Google Drive mounted successfully!")
-            except Exception as e:
-                clear_output()
-                print(f"❌ Mounting failed: {str(e)}\n")
-                return
-
-        try:
-            # Create base directory structure
-            os.makedirs(GD_BASE, exist_ok=True)
-            for cfg in SYMLINK_CONFIG:
-                path = os.path.join(GD_BASE, cfg['gdrive_subpath'])
-                os.makedirs(path, exist_ok=True)
-            print(f"📁 → {GD_BASE}")
-
-            # Create symlinks
-            for cfg in SYMLINK_CONFIG:
-                src = os.path.join(cfg['local_dir'], 'GDrive')
-                dst = os.path.join(GD_BASE, cfg['gdrive_subpath'])
-                create_symlink(src, dst, log)
-
-            print("✅ Symlinks created successfully!")
-
-        except Exception as e:
-            print(f"❌ Setup error: {str(e)}\n")
-
-        # Trashing
-        cmd = f"find {GD_BASE} -type d -name .ipynb_checkpoints -exec rm -rf {{}} +"
-        subprocess.run(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    else:
-        if os.path.exists(str(DRIVE_PATH)): # Using DRIVE_PATH
-            try:
-                print("⏳ Unmounting Google Drive...", end='')
-                with capture.capture_output():
-                    drive.flush_and_unmount()
-                    os.system("rm -rf /content/drive")
-                print("\r✅ Google Drive unmounted and cleaned!")
-
-                # Remove symlinks
-                for cfg in SYMLINK_CONFIG:
-                    link_path = os.path.join(cfg['local_dir'], 'GDrive')
-                    if os.path.islink(link_path):
-                        os.unlink(link_path)
-
-                print("🗑️ Symlinks removed successfully!")
-
-            except Exception as e:
-                print(f"❌ Unmount error: {str(e)}\n")
-
-handle_gdrive(mountGDrive)
+# Removed the call to handle_gdrive(mountGDrive) as it is no longer needed here.
 
 
 # Get XL or 1.5 models list
