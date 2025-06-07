@@ -714,7 +714,7 @@ line = ""
 line = handle_submodels(model, model_num, model_list, str(model_dir), line)
 line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
 line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
-line = handle_submodels(lora, lora_num, _loras_data.lora_list, str(lora_dir), line) # Added LoRA handling
+line = handle_submodels(lora, lora_num, lora_list_to_use, str(lora_dir), line) # Updated to use lora_list_to_use
 
 
 ''' File.txt - added urls '''
