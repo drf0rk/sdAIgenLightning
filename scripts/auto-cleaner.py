@@ -88,37 +88,58 @@ def clean_directory(directory, directory_type):
     return deleted_files
 
 # --- START OF MODIFICATION ---
+# Use a global variable to store confirmation status
+_confirm_global_delete_status = False
+
+def _on_confirm_global_delete_button_click(button):
+    """Callback function for the global delete confirmation button."""
+    global _confirm_global_delete_status
+    _confirm_global_delete_status = True
+
 def clean_all_except_notebook_and_main():
     """Deletes all files and folders in the current working directory except the notebook and main.py."""
+    global _confirm_global_delete_status # Access the global variable
+
     output.clear_output()
     with output:
         print("!!! Initiating COMPREHENSIVE DELETION !!!")
         print("This will remove almost everything. Please confirm again.")
         confirm_html = HTML("""
             <p style="color: red; font-weight: bold;">
-                Type 'CONFIRM_GLOBAL_DELETE' (case-sensitive) and press Enter in the text box below to proceed.
+                Type 'CONFIRM_GLOBAL_DELETE' (case-sensitive) in the text box below and then click 'Confirm Deletion'.
             </p>
             <p>Anything else will abort.</p>
         """)
         display(confirm_html)
         
-        # Capture user input using a blocking loop with clear_output
+        # Text input widget
         global_confirm_input_widget = widgets.Text(
             description="Confirm:", 
             placeholder="CONFIRM_GLOBAL_DELETE",
             layout=widgets.Layout(width='auto')
         )
-        display(global_confirm_input_widget)
-        
-        # Use a non-blocking wait by checking the value in a loop
-        confirmation_input = ""
-        while confirmation_input == "":
-            time.sleep(0.1) # Short delay to prevent busy-waiting
-            confirmation_input = global_confirm_input_widget.value.strip()
+        # Button for explicit confirmation
+        confirm_button = widgets.Button(
+            description="Confirm Deletion",
+            button_style='danger',
+            layout=widgets.Layout(width='auto')
+        )
+        confirm_button.on_click(_on_confirm_global_delete_button_click)
 
-        # Clear the confirmation input widget after value is captured
+        # Display widgets
+        display(global_confirm_input_widget, confirm_button)
+        
+        _confirm_global_delete_status = False # Reset status before waiting
+        # Wait for the user to click the button
+        while not _confirm_global_delete_status:
+            time.sleep(0.1) # Short delay to prevent busy-waiting
+
+        confirmation_input = global_confirm_input_widget.value.strip()
+
+        # Close widgets to clean up the display
         global_confirm_input_widget.close()
-        clear_output(wait=True) # Clear the confirmation prompt output
+        confirm_button.close()
+        clear_output(wait=True) # Clear confirmation prompt output
 
         if confirmation_input == "CONFIRM_GLOBAL_DELETE":
             with output: # Ensure subsequent prints go to the output widget
