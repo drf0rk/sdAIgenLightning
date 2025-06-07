@@ -306,7 +306,9 @@ else:
 if latest_webui or latest_extensions:
     action = 'WebUI and Extensions' if latest_webui and latest_extensions else ('WebUI' if latest_webui else 'Extensions')
     print(f"⌚️ Update {action}...", end='')
-    with capture.capture_output():
+    # DEBUG START: Temporarily remove capture_output to see git command output
+    # with capture.capture_output():
+    # DEBUG END
         ipySys('git config --global user.email "you@example.com"')
         ipySys('git config --global user.name "Your Name"')
 
@@ -315,19 +317,22 @@ if latest_webui or latest_extensions:
             CD(WEBUI)
             # ipySys('git restore .')
             # ipySys('git pull -X theirs --rebase --autostash')
-
-            ipySys('git stash push --include-untracked')
-            ipySys('git pull --rebase')
-            ipySys('git stash pop')
+            print("Updating WebUI repository...")
+            subprocess.run(['git', 'stash', 'push', '--include-untracked'], check=False) # check=False to avoid crashing
+            subprocess.run(['git', 'pull', '--rebase'], check=False) # check=False to avoid crashing
+            subprocess.run(['git', 'stash', 'pop'], check=False) # check=False to avoid crashing
 
         ## Update extensions
         if latest_extensions:
-            # ipySys('{\'for dir in \' + WEBUI + \'/extensions/*/; do cd \\'$dir\\' && git reset --hard && git pull; done\'}')
+            print("Updating extensions...")
             for entry in os.listdir(f"{WEBUI}/extensions"):
                 dir_path = f"{WEBUI}/extensions/{entry}"
                 if os.path.isdir(dir_path):
-                    subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    subprocess.run(['git', 'pull'], cwd=dir_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    # DEBUG START: Ensure output is visible
+                    print(f"  Updating extension: {entry}")
+                    subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
+                    subprocess.run(['git', 'pull'], cwd=dir_path, check=False)
+                    # DEBUG END
 
     print(f"\r✨ Update {action} Completed!")
 
