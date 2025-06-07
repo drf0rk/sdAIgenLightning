@@ -416,6 +416,26 @@ model_files = '_xl-models-data.py' if XL_models else '_models-data.py'
 with open(f"{SCRIPTS}/{model_files}") as f:
     exec(f.read())
 
+# New: Load _loras-data.py to make lora_data available
+try:
+    with open(f"{SCRIPTS}/_loras-data.py") as f:
+        lora_data_content = f.read()
+    exec(lora_data_content, globals(), globals()) # Execute in global scope
+    # Now lora_data should be available
+except FileNotFoundError:
+    print(f"Error: _loras-data.py not found at {SCRIPTS}/_loras-data.py. Please ensure it is downloaded.")
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} # Provide empty default
+except Exception as e:
+    print(f"Error loading _loras-data.py: {e}")
+    lora_data = {"sd15_loras": {}, "sdxl_loras": {}} # Provide empty default
+
+# Determine which lora list to use based on XL_models setting
+# This needs to be done before handle_submodels for lora is called
+lora_list_to_use = lora_data.get('sdxl_loras', {}) if XL_models else lora_data.get('sd15_loras', {})
+# Ensure lora_list_to_use is an actual dictionary, not None or missing key, then get keys
+if not isinstance(lora_list_to_use, dict):
+    lora_list_to_use = {}
+
 ## Downloading model and stuff | oh~ Hey! If you're freaked out by that code too, don't worry, me too!
 print('📦 Downloading models and stuff...', end='')
 
