@@ -772,7 +772,7 @@ def _process_lines(lines):
             if not url.startswith('http'):
                 continue
 
-            clean_url = re.sub(r'\[.*?\]', '', url)
+            clean_url = re.re.sub(r'\[.*?\]', '', url)
             entry_key = (current_tag, clean_url)    # Uniqueness is determined by a pair (tag, URL)
 
             if entry_key not in processed_entries:
