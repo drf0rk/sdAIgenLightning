@@ -229,6 +229,11 @@ huggingface_widget = factory.create_hbox([huggingface_token_widget, huggingface_
 ngrok_token_widget = factory.create_text('Ngrok Token:', '2tjxIXifSaGR3dMhkvhk6sZqbGo_6ZfBZLZHMbtAjfRmfoDW5')
 ngrok_button = create_expandable_button('Get Ngrok Token', 'https://dashboard.ngrok.com/get-started/your-authtoken')
 ngrok_widget = factory.create_hbox([ngrok_token_widget, ngrok_button])
+
+# Moved Zrok widget definition before additional_widget_list
+zrok_token_widget = factory.create_text('Zrok Token:')
+zrok_button = create_expandable_button('Register Zrok Token', 'https://colab.research.google.com/drive/1d2sjWDJi_GYBUavrHSuQyHTDuLy36WpU')
+zrok_widget = factory.create_hbox([zrok_token_widget, zrok_button])
 # HARDCODED TOKENS END HERE
 
 commandline_arguments_widget = factory.create_text('Arguments:', webui_selection['A1111'])
