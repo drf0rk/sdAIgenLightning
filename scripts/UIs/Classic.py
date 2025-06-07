@@ -10,7 +10,7 @@ from pathlib import Path
 import subprocess
 import asyncio
 import os
-
+import shutil # Import shutil for rmtree
 
 CD = os.chdir
 ipySys = get_ipython().system
@@ -37,6 +37,7 @@ CD(HOME)
 ## ================== WEB UI OPERATIONS ==================
 
 async def _download_file(url, directory, filename):
+    """Downloads a single file."""
     os.makedirs(directory, exist_ok=True)
     file_path = os.path.join(directory, filename)
 
@@ -51,6 +52,7 @@ async def _download_file(url, directory, filename):
     await process.communicate()
 
 async def download_files(file_list):
+    """Downloads multiple files asynchronously."""
     tasks = []
     for file_info in file_list:
         parts = file_info.split(',')
@@ -61,6 +63,7 @@ async def download_files(file_list):
     await asyncio.gather(*tasks)
 
 async def download_configuration():
+    """Downloads configuration files and clones extensions."""
     ## FILES
     url_cfg = f"https://raw.githubusercontent.com/{FORK_REPO}/{BRANCH}/__configs__"
     configs = [
@@ -116,12 +119,37 @@ async def download_configuration():
     await asyncio.gather(*tasks)
 
 def unpack_webui():
+    """Unpacks the WebUI zip file and cleans up model-related directories."""
     zip_path = f"{HOME}/{UI}.zip"
     m_download(f"{REPO_URL} {HOME} {UI}.zip")
     ipySys(f"unzip -q -o {zip_path} -d {WEBUI}")
     ipySys(f"rm -rf {zip_path}")
 
+    # --- START OF MODIFICATION ---
+    # Define model-related directories that should NOT be in the WebUI folder
+    # as they are handled by the shared model base.
+    model_dirs_to_clean = [
+        WEBUI / 'Stable-diffusion', # For Classic UI
+        WEBUI / 'VAE',
+        WEBUI / 'Lora',
+        WEBUI / 'embeddings',
+        WEBUI / 'ESRGAN', # Upscale models for Classic
+        # Add any other subdirectories that might contain large model files
+        # but are not needed within the UI's specific folder.
+    ]
+
+    print(f"🧹 Cleaning up unzipped model-related directories within {UI}...")
+    for d in model_dirs_to_clean:
+        if d.exists() and d.is_dir():
+            print(f"   Deleting: {d}")
+            try:
+                shutil.rmtree(d)
+            except OSError as e:
+                print(f"   Error deleting {d}: {e}")
+    # --- END OF MODIFICATION ---
+
 def fixes_modules():
+    """Applies specific fixes to Classic UI modules."""
     path = WEBUI / "modules/cmd_args.py"
     if not path.exists():
         return
@@ -141,3 +169,4 @@ if __name__ == '__main__':
         unpack_webui()
         asyncio.run(download_configuration())
         fixes_modules()
+

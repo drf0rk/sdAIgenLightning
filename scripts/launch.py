@@ -21,6 +21,114 @@ import os
 import re
 
 
+# Universal platform detection and optimization
+def detect_and_optimize_platform():
+    """Detect platform and apply all necessary optimizations"""
+    import os
+    from pathlib import Path
+
+    # Get platform from environment or detect
+    platform = os.environ.get('DETECTED_PLATFORM', 'local')
+
+    if not platform or platform == 'local':
+        # Re-detect platform
+        try:
+            import google.colab
+            platform = 'colab'
+        except ImportError:
+            pass
+
+        if os.path.exists('/kaggle'):
+            platform = 'kaggle'
+        elif (os.environ.get('LIGHTNING_CLOUD_PROJECT_ID') or
+              os.environ.get('LIGHTNING_AI') or
+              os.path.exists('/teamspace') or
+              'lightning' in os.environ.get('PWD', '').lower() == True or # Ensure exact match on 'lightning' in PWD for stricter detection
+              'studios' in os.environ.get('PWD', '').lower() == True):   # Ensure exact match on 'studios' in PWD
+            platform = 'lightning'
+        elif 'lightning' in str(Path.home()).lower(): # Final check for home path
+             platform = 'lightning'
+
+
+    # Set platform environment variable
+    os.environ['DETECTED_PLATFORM'] = platform
+    print(f"🔍 Platform detected: {platform}")
+
+    # Apply platform-specific optimizations
+    if platform == 'lightning':
+        # Lightning AI optimizations
+        optimizations = {
+            'PYTORCH_CUDA_ALLOC_CONF': 'max_split_size_mb:128',
+            'CUDA_LAUNCH_BLOCKING': '1',
+            'TMPDIR': '/tmp/sdaigen',
+            'TEMP': '/tmp/sdaigen',
+            'CUDA_VISIBLE_DEVICES': '0',  # Use first GPU only
+        }
+
+        for key, value in optimizations.items():
+            os.environ[key] = value
+
+        # Create temp directories
+        temp_dirs = ['/tmp/sdaigen', '/teamspace/studios/this_studio/temp']
+        for temp_dir in temp_dirs:
+            Path(temp_dir).mkdir(parents=True, exist_ok=True)
+
+        print("⚡ Applied Lightning AI optimizations")
+
+        # Define the centralized model base for PLATFORM_ARGS
+        SHARED_MODEL_BASE = Path('/teamspace/studios/this_studio') / 'sd_models_shared'
+        os.makedirs(SHARED_MODEL_BASE, exist_ok=True) # Ensure shared base exists
+
+        # Return Lightning AI launch arguments
+        return [
+            '--xformers',
+            '--no-half-vae',
+            '--opt-split-attention',
+            '--medvram',
+            '--disable-console-progressbars',
+            '--api',
+            '--cors-allow-origins=*',
+            '--listen',
+            '--port=8080',
+            f'--ckpt-dir={SHARED_MODEL_BASE}/Stable-diffusion', # Point to shared location
+            f'--embeddings-dir={SHARED_MODEL_BASE}/embeddings', # Point to shared location
+            f'--lora-dir={SHARED_MODEL_BASE}/loras', # Point to shared location
+            f'--vae-dir={SHARED_MODEL_BASE}/vae', # Point to shared location
+            f'--controlnet-dir={SHARED_MODEL_BASE}/ControlNet', # Point to shared location
+            '--disable-safe-unpickle',  # For Lightning AI compatibility
+            '--skip-torch-cuda-test',   # Skip CUDA tests
+            '--no-download-sd-model'    # Don't auto-download models
+        ]
+
+    elif platform == 'colab':
+        # Google Colab optimizations
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        return [
+            '--share',
+            '--xformers',
+            '--enable-insecure-extension-access',
+            '--opt-split-attention'
+        ]
+
+    elif platform == 'kaggle':
+        # Kaggle optimizations
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        return [
+            '--listen',
+            '--port=8080',
+            '--xformers',
+            '--medvram',
+            '--opt-split-attention'
+        ]
+
+    else:
+        # Local/default
+        return ['--xformers']
+
+# Apply optimizations and get launch arguments
+PLATFORM_ARGS = detect_and_optimize_platform()
+
+
 CD = os.chdir
 ipySys = get_ipython().system
 
@@ -40,8 +148,9 @@ PKG = str(VENV / 'lib/python3.10/site-packages')
 
 if BIN not in os.environ['PATH']:
     os.environ['PATH'] = BIN + ':' + os.environ['PATH']
-if PKG not in os.environ['PYTHONPATH']:
-    os.environ['PYTHONPATH'] = PKG + ':' + os.environ['PYTHONPATH']
+# Fix: Safely get PYTHONPATH, defaulting to empty string if not set
+if PKG not in os.environ.get('PYTHONPATH', ''):
+    os.environ['PYTHONPATH'] = PKG + ':' + os.environ.get('PYTHONPATH', '')
 
 
 ## ================ loading settings V5 ==================
@@ -110,7 +219,9 @@ def get_launch_command():
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"
     else:
-        return f"python3 launch.py {base_args}{common_args}"
+        # Replaced original argument assembly with PLATFORM_ARGS
+        final_args = " ".join(PLATFORM_ARGS)
+        return f"python3 launch.py {final_args}{common_args}"
 
 ## ===================== Tunneling =======================
 
@@ -252,8 +363,9 @@ class TunnelManager:
             if current_token != ngrok_token:
                 ipySys(f"ngrok config add-authtoken {ngrok_token}")
 
+            # Fix: Use absolute path for ngrok command
             services.append(('Ngrok', {
-                'command': f"ngrok http http://localhost:{self.tunnel_port} --log stdout",
+                'command': f"/usr/bin/ngrok http http://localhost:{self.tunnel_port} --log stdout",
                 'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
             }))
 
@@ -350,7 +462,7 @@ if __name__ == '__main__':
                 print(f"  - {error['name']}: {error['reason']}")
             print()
 
-        print(f"🔧 WebUI: \033[34m{UI}\033[0m")
+        print(f"🔧 WebUI: \033[34m{UI}\003[0m")
 
         try:
             ipySys(LAUNCHER)
@@ -367,6 +479,6 @@ if __name__ == '__main__':
         with open(f"{WEBUI}/static/timer.txt") as f:
             timer = float(f.read())
             duration = timedelta(seconds=time.time() - timer)
-            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\033[0m")
+            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\003[0m")
     except FileNotFoundError:
         pass

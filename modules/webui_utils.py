@@ -28,6 +28,9 @@ WEBUI_PATHS = {
 
 DEFAULT_UI = 'A1111'
 
+# New: Define a centralized base directory for all shared models
+SHARED_MODEL_BASE = HOME / 'sd_models_shared'
+
 
 def update_current_webui(current_value):
     """Update the current WebUI value and save settings."""
@@ -45,38 +48,59 @@ def _set_webui_paths(ui):
     """Configure paths for specified UI, fallback to A1111 for unknown UIs"""
     selected_ui = ui if ui in WEBUI_PATHS else DEFAULT_UI
     webui_root = HOME / ui
-    models_root = webui_root / 'models'
+    
+    # NEW: All model-related paths will now point to subdirectories under SHARED_MODEL_BASE
+    models_root = SHARED_MODEL_BASE 
+    os.makedirs(models_root, exist_ok=True) # Ensure shared base exists
 
-    # Get path components for selected UI
-    paths = WEBUI_PATHS[selected_ui]
-    checkpoint, vae, lora, embed, extension, upscale, output = paths
-
-    # Configure special paths
+    # Fix: Define is_comfy and is_classic before their first use
     is_comfy = selected_ui == 'ComfyUI'
     is_classic = selected_ui == 'Classic'
-    control_dir = 'controlnet' if is_comfy else 'ControlNet'
-    embed_root = models_root if (is_comfy or is_classic) else webui_root
-    config_root = webui_root / 'user/default' if is_comfy else webui_root
+
+    # Get path components for selected UI (these are now mostly logical names)
+    paths = WEBUI_PATHS[selected_ui]
+    checkpoint_subdir, vae_subdir, lora_subdir, embed_subdir, extension_subdir, upscale_subdir, output_subdir = paths
+
+    # Adjust subdirectory names for shared storage based on UI type, ensuring consistent naming
+    # These effectively standardize paths under SHARED_MODEL_BASE
+    actual_checkpoint_subdir = 'checkpoints' if is_comfy else 'Stable-diffusion'
+    actual_vae_subdir = 'vae'
+    actual_lora_subdir = 'loras' if is_comfy else 'Lora'
+    actual_embed_subdir = 'embeddings'
+    actual_control_subdir = 'controlnet' if is_comfy else 'ControlNet'
+    actual_upscale_subdir = 'upscale_models' if is_comfy else 'ESRGAN'
+    actual_adetailer_subdir = 'ultralytics' if is_comfy else 'adetailer'
+    actual_clip_subdir = 'clip' if is_comfy else 'text_encoder'
+    actual_unet_subdir = 'unet' if is_comfy else 'unet' # Unet dir for both
+    actual_vision_subdir = 'clip_vision'
+    actual_encoder_subdir = 'text_encoders' if is_comfy else 'text_encoder'
+    actual_diffusion_subdir = 'diffusion_models'
 
     path_config = {
-        'model_dir': str(models_root / checkpoint),
-        'vae_dir': str(models_root / vae),
-        'lora_dir': str(models_root / lora),
-        'embed_dir': str(embed_root / embed),
-        'extension_dir': str(webui_root / extension),
-        'control_dir': str(models_root / control_dir),
-        'upscale_dir': str(models_root / upscale),
-        'output_dir': str(webui_root / output),
-        'config_dir': str(config_root),
-        # other dirs
-        'adetailer_dir': str(models_root / ('ultralytics' if is_comfy else 'adetailer')),
-        'clip_dir': str(models_root / ('clip' if is_comfy else 'text_encoder')),
-        'unet_dir': str(models_root / ('unet' if is_comfy else 'text_encoder')),
-        'vision_dir': str(models_root / 'clip_vision'),
-        'encoder_dir': str(models_root / ('text_encoders' if is_comfy else 'text_encoder')),
-        'diffusion_dir': str(models_root / 'diffusion_models')
+        'model_dir': str(models_root / actual_checkpoint_subdir),
+        'vae_dir': str(models_root / actual_vae_subdir),
+        'lora_dir': str(models_root / actual_lora_subdir),
+        'embed_dir': str(models_root / actual_embed_subdir),
+        'control_dir': str(models_root / actual_control_subdir),
+        'upscale_dir': str(models_root / actual_upscale_subdir),
+        'adetailer_dir': str(models_root / actual_adetailer_subdir),
+        'clip_dir': str(models_root / actual_clip_subdir),
+        'unet_dir': str(models_root / actual_unet_subdir),
+        'vision_dir': str(models_root / actual_vision_subdir),
+        'encoder_dir': str(models_root / actual_encoder_subdir),
+        'diffusion_dir': str(models_root / actual_diffusion_subdir),
+        
+        # Extensions and outputs usually remain UI-specific
+        'extension_dir': str(webui_root / extension_subdir),
+        'output_dir': str(webui_root / output_subdir),
+        'config_dir': str(webui_root / ('user/default' if is_comfy else '')) # ComfyUI has a specific user/default config path
     }
 
+    # Ensure all new shared directories exist
+    for key, path_str in path_config.items():
+        if '_dir' in key and 'extension_dir' not in key and 'output_dir' not in key and 'config_dir' not in key:
+            Path(path_str).mkdir(parents=True, exist_ok=True)
+            
     js.update(SETTINGS_PATH, 'WEBUI', path_config)
 
 def handle_setup_timer(webui_path, timer_webui):

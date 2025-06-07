@@ -266,10 +266,13 @@ unet_dir = SHARED_MODEL_BASE / 'unet'
 vision_dir = SHARED_MODEL_BASE / 'clip_vision'
 encoder_dir = SHARED_MODEL_BASE / 'text_encoder'
 diffusion_dir = SHARED_MODEL_BASE / 'diffusion_models'
+extension_dir = Path(WEBUI) / 'extensions' if UI != 'ComfyUI' else Path(WEBUI) / 'custom_nodes' # Handle UI-specific extension path
+config_dir = Path(WEBUI) / 'config' # Typically UI-specific
 
 # Ensure these shared directories exist
 for d_path in [model_dir, vae_dir, lora_dir, embed_dir, control_dir, upscale_dir, 
-               adetailer_dir, clip_dir, unet_dir, vision_dir, encoder_dir, diffusion_dir]:
+               adetailer_dir, clip_dir, unet_dir, vision_dir, encoder_dir, diffusion_dir,
+               extension_dir, config_dir]:
     d_path.mkdir(parents=True, exist_ok=True)
 
 # Update settings.json with these definitive paths as well, for consistency
@@ -286,6 +289,9 @@ js.update(SETTINGS_PATH, 'WEBUI.unet_dir', str(unet_dir))
 js.update(SETTINGS_PATH, 'WEBUI.vision_dir', str(vision_dir))
 js.update(SETTINGS_PATH, 'WEBUI.encoder_dir', str(encoder_dir))
 js.update(SETTINGS_PATH, 'WEBUI.diffusion_dir', str(diffusion_dir))
+js.update(SETTINGS_PATH, 'WEBUI.extension_dir', str(extension_dir))
+js.update(SETTINGS_PATH, 'WEBUI.config_dir', str(config_dir))
+
 
 # Re-read webui_settings from JSON after updating it, to reflect potential ComfyUI-specific sub-paths if _set_webui_paths adjusted them.
 webui_settings = js.read(SETTINGS_PATH, 'WEBUI', {})
@@ -312,7 +318,7 @@ if UI in ['A1111', 'SD-UX'] and not os.path.exists(Path(HOME) / '.cache/huggingf
 
     zip_path = f"{HOME}/{name_zip}.zip"
     # Using the new platform-aware download function
-    download_file_platform_aware(chache_url, Path(zip_path))
+    m_download(f"{chache_url} {HOME} {name_zip}.zip") # Using m_download as platform-aware is not defined here
     ipySys(f"unzip -q -o {zip_path} -d /")
     ipySys(f"rm -rf {zip_path}")
 
@@ -359,8 +365,8 @@ if latest_webui or latest_extensions:
     ## Update extensions
     if latest_extensions:
         print("Updating extensions...")
-        for entry in os.listdir(f"{WEBUI}/extensions"):
-            dir_path = f"{WEBUI}/extensions/{entry}"
+        for entry in os.listdir(str(extension_dir)):
+            dir_path = os.path.join(str(extension_dir), entry)
             if os.path.isdir(dir_path):
                 print(f"  Updating extension: {entry}")
                 subprocess.run(['git', 'reset', '--hard'], cwd=dir_path, check=False)
@@ -372,7 +378,8 @@ if latest_webui or latest_extensions:
 # === FIXING EXTENSIONS ===
 with capture.capture_output():
     # --- Umi-Wildcard ---
-    ipySys(f"sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
+    if os.path.exists(f"{WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py"):
+        ipySys(f"sed -i '521s/open=\\(False\\|True\\)/open=False/' {WEBUI}/extensions/Umi-AI-Wildcards/scripts/wildcard_recursive.py")    # Closed accordion by default
 
 
 ## Version switching
@@ -803,7 +810,6 @@ if not isinstance(lora_list_to_use, dict):
     lora_list_to_use = {}
 
 line_entries.extend(handle_submodels(lora, lora_num, lora_list_to_use, lora_dir))
-
 
 ''' File.txt - added urls '''
 

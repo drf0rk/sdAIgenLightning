@@ -60,6 +60,51 @@ def get_platform_paths():
 # Get paths (not creating them here yet)
 PATHS = get_platform_paths()
 
+def get_platform_widget_settings():
+    """Get platform-optimized widget settings"""
+    if PLATFORM == 'lightning':
+        return {
+            'max_batch_size': 2,  # Conservative for Lightning AI
+            'max_steps': 50,
+            'default_sampler': 'DPM++ 2M Karras',
+            'enable_xformers': True,
+            'enable_api': True,
+            'listen_all': True,
+            'port': 8080
+        }
+    elif PLATFORM == 'colab':
+        return {
+            'max_batch_size': 4,
+            'max_steps': 100,
+            'default_sampler': 'Euler a',
+            'enable_xformers': True,
+            'enable_api': False,
+            'listen_all': False,
+            'port': 7860
+        }
+    elif PLATFORM == 'kaggle':
+        return {
+            'max_batch_size': 3,
+            'max_steps': 75,
+            'default_sampler': 'DPM++ 2M Karras',
+            'enable_xformers': True,
+            'enable_api': True,
+            'listen_all': True,
+            'port': 8080
+        }
+    else:
+        return {
+            'max_batch_size': 4,
+            'max_steps': 100,
+            'default_sampler': 'Euler a',
+            'enable_xformers': True,
+            'enable_api': False,
+            'listen_all': False,
+            'port': 7860
+        }
+
+WIDGET_SETTINGS = get_platform_widget_settings()
+
 # Constants
 HOME = Path.home()
 SCR_PATH = Path(HOME / 'ANXETY')
@@ -79,48 +124,29 @@ widgets_js = JS / 'main-widgets.js'
 # These paths are what determine your top-level folder structure.
 for path_key, path_obj in PATHS.items():
     if path_obj: # Ensure path_obj is not empty/None
-        # These are all top-level directories or critical shared directories.
-        # We assume they should exist in the root if not part of system /tmp.
-        if path_key not in ['temp', 'cache']: # Exclude system temp/cache as they might be handled elsewhere
-            path_obj.mkdir(parents=True, exist_ok=True)
-            print(f"Created directory: {path_obj}")
+        path_obj.mkdir(parents=True, exist_ok=True)
 
-# Explicitly ensure SHARED_MODEL_BASE itself and its known main subdirectories exist
+
+# Explicitly ensure SHARED_MODEL_BASE itself exists
 SHARED_MODEL_BASE.mkdir(parents=True, exist_ok=True)
-print(f"Ensured SHARED_MODEL_BASE exists: {SHARED_MODEL_BASE}")
-
-# Also ensure specific model subdirectories within SHARED_MODEL_BASE are created here,
-# as widgets script might be the first to trigger their need.
-(SHARED_MODEL_BASE / 'Stable-diffusion').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'vae').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'Lora').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'embeddings').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'ControlNet').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'adetailer').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'text_encoder').mkdir(parents=True, exist_ok=True) # For clip/encoder
-(SHARED_MODEL_BASE / 'unet').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'clip_vision').mkdir(parents=True, exist_ok=True) # For vision
-(SHARED_MODEL_BASE / 'diffusion_models').mkdir(parents=True, exist_ok=True)
-(SHARED_MODEL_BASE / 'ESRGAN').mkdir(parents=True, exist_ok=True)
 
 # Update the settings.json with the definitive paths from this script
-# (These would have been read from settings.json in downloading.py)
 # This ensures consistency for other scripts relying on settings.json
-js.save(SETTINGS_PATH, 'WEBUI.model_dir', str(SHARED_MODEL_BASE / 'Stable-diffusion'))
-js.save(SETTINGS_PATH, 'WEBUI.vae_dir', str(SHARED_MODEL_BASE / 'vae'))
-js.save(SETTINGS_PATH, 'WEBUI.lora_dir', str(SHARED_MODEL_BASE / 'Lora'))
-js.save(SETTINGS_PATH, 'WEBUI.embed_dir', str(SHARED_MODEL_BASE / 'embeddings'))
-js.save(SETTINGS_PATH, 'WEBUI.control_dir', str(SHARED_MODEL_BASE / 'ControlNet'))
-js.save(SETTINGS_PATH, 'WEBUI.adetailer_dir', str(SHARED_MODEL_BASE / 'adetailer'))
-js.save(SETTINGS_PATH, 'WEBUI.clip_dir', str(SHARED_MODEL_BASE / 'text_encoder'))
-js.save(SETTINGS_PATH, 'WEBUI.unet_dir', str(SHARED_MODEL_BASE / 'unet'))
-js.save(SETTINGS_PATH, 'WEBUI.vision_dir', str(SHARED_MODEL_BASE / 'clip_vision'))
-js.save(SETTINGS_PATH, 'WEBUI.encoder_dir', str(SHARED_MODEL_BASE / 'text_encoder'))
-js.save(SETTINGS_PATH, 'WEBUI.diffusion_dir', str(SHARED_MODEL_BASE / 'diffusion_models'))
-js.save(SETTINGS_PATH, 'WEBUI.upscale_dir', str(SHARED_MODEL_BASE / 'ESRGAN'))
-js.save(SETTINGS_PATH, 'WEBUI.output_dir', str(PATHS['outputs'])) # Use the base/outputs path
-js.save(SETTINGS_PATH, 'WEBUI.extension_dir', str(PATHS['extensions_root'])) # Use the base/extensions path
-js.save(SETTINGS_PATH, 'WEBUI.config_dir', str(PATHS['config_root'])) # Use the base/config path
+js.save(SETTINGS_PATH, 'WEBUI.model_dir', str(PATHS['models']))
+js.save(SETTINGS_PATH, 'WEBUI.vae_dir', str(PATHS['vae']))
+js.save(SETTINGS_PATH, 'WEBUI.lora_dir', str(PATHS['lora']))
+js.save(SETTINGS_PATH, 'WEBUI.embed_dir', str(PATHS['embeddings']))
+js.save(SETTINGS_PATH, 'WEBUI.control_dir', str(PATHS['controlnet']))
+js.save(SETTINGS_PATH, 'WEBUI.adetailer_dir', str(PATHS['adetailer']))
+js.save(SETTINGS_PATH, 'WEBUI.clip_dir', str(PATHS['clip']))
+js.save(SETTINGS_PATH, 'WEBUI.unet_dir', str(PATHS['unet']))
+js.save(SETTINGS_PATH, 'WEBUI.vision_dir', str(PATHS['vision']))
+js.save(SETTINGS_PATH, 'WEBUI.encoder_dir', str(PATHS['encoder']))
+js.save(SETTINGS_PATH, 'WEBUI.diffusion_dir', str(PATHS['diffusion']))
+js.save(SETTINGS_PATH, 'WEBUI.upscale_dir', str(PATHS['upscale']))
+js.save(SETTINGS_PATH, 'WEBUI.output_dir', str(PATHS['outputs']))
+js.save(SETTINGS_PATH, 'WEBUI.extension_dir', str(PATHS['extensions_root']))
+js.save(SETTINGS_PATH, 'WEBUI.config_dir', str(PATHS['config_root']))
 
 
 # Re-load settings to ensure `model_dir`, `vae_dir` etc. are updated for the rest of this script's execution
