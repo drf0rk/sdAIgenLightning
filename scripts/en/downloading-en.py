@@ -81,10 +81,6 @@ DOWNLOAD_CONFIG = get_download_config()
 os.makedirs(DOWNLOAD_CONFIG['base_path'], exist_ok=True)
 os.makedirs(DOWNLOAD_CONFIG['temp_path'], exist_ok=True)
 
-# These will now be populated from settings.json's WEBUI paths after loading settings
-# Removed direct calculation based on DOWNLOAD_CONFIG['base_path'] here
-# MODEL_DIR, EXTENSION_DIR, etc.
-
 
 CD = os.chdir
 ipySys = get_ipython().system
@@ -244,8 +240,7 @@ locals().update(settings)
 # Fix: Retrieve DRIVE_PATH from settings, defaulting to HOME if not found
 DRIVE_PATH = Path(settings.get('gdrive_path', str(HOME)))
 
-# Populate model/asset directories from settings.json
-# These paths are set by webui_utils.py based on the selected UI
+# Populate model/asset directories from settings.json (paths set by webui_utils.py)
 model_dir = Path(settings['WEBUI']['model_dir'])
 vae_dir = Path(settings['WEBUI']['vae_dir'])
 lora_dir = Path(settings['WEBUI']['lora_dir'])
@@ -558,47 +553,66 @@ def _unpack_zips():
 # Download Core (Modified to use new platform-aware download functions)
 
 def _process_download_link(link):
-    """Processes a download link, splitting prefix, URL, and filename."""
-    link = _clean_url(link)
-    if ':' in link:
-        prefix, path = link.split(':', 1)
-        if prefix in PREFIX_MAP:
-            return prefix, re.sub(r'\[.*?\]', '', path), _extract_filename(path)
-    return None, link, None
+    """Parses a download link, cleaning the URL and extracting a filename if present.
+    Returns (prefix, clean_url, specified_filename) or (None, full_link, None) if not prefixed.
+    Note: This is designed for single URL strings, not "url dst_dir filename" combined.
+    """
+    prefixed_match = re.match(r'^([^:]+):(.+)$', link) # Matches "prefix:rest_of_link"
+    if prefixed_match:
+        prefix = prefixed_match.group(1)
+        raw_url_part = prefixed_match.group(2) # This is "http://url[filename]"
+        
+        clean_url = re.sub(r'\[.*?\]', '', raw_url_part)
+        specified_filename = _extract_filename(raw_url_part) # Extracts filename from [filename] or URL last part
+        return (prefix, clean_url, specified_filename)
+    else:
+        # If not prefixed, treat the whole link as a potential URL or "url dst_dir filename" string
+        # The filename extraction is handled by download() for non-prefixed cases
+        return (None, link, None)
+
 
 def download(line):
     """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    for link in filter(None, map(str.strip, line.split(','))):
-        prefix, url, filename = _process_download_link(link)
+    for link_entry in filter(None, map(str.strip, line.split(','))):
+        # Try to parse as prefixed link first
+        prefix, clean_url_or_full_link, specified_filename = _process_download_link(link_entry)
 
-        if prefix:
+        if prefix: # This means it was a "prefix:URL[filename]" format
             dir_path, _ = PREFIX_MAP[prefix]
             if prefix == 'extension':
-                extension_repo.append((url, filename))
+                extension_repo.append((clean_url_or_full_link, specified_filename))
                 continue
             try:
-                # Use the new platform-aware download function for direct file downloads
-                if not download_file_platform_aware(url, Path(dir_path) / filename if filename else Path(dir_path) / Path(url).name, f"Downloading {filename or Path(url).name}"):
-                    print(f"\n> Download error for {url}")
+                manual_download(clean_url_or_full_link, dir_path, specified_filename, prefix)
             except Exception as e:
-                print(f"\n> Download error: {e}")
-        else:
-            url_parts = url.split()
-            if len(url_parts) >= 2:
-                url_to_download = url_parts[0]
-                dst_dir = Path(url_parts[1])
-                file_name = url_parts[2] if len(url_parts) >= 3 else None
-                # Use the new platform-aware download function for direct file downloads
-                if not download_file_platform_aware(url_to_download, dst_dir / file_name if file_name else dst_dir / Path(url_to_download).name, f"Downloading {file_name or Path(url_to_download).name}"):
-                    print(f"\n> Download error for {url_to_download}")
+                print(f"\n> Download error for prefixed link '{link_entry}': {e}")
+        else: # Not a prefixed link, assume it's "url dst_dir filename" format, or just a raw URL
+            parts = link_entry.split()
+            if len(parts) >= 3:
+                # Format: "url dst_dir filename"
+                url_to_download = parts[0]
+                dst_dir_path = Path(parts[1]) # This is the full path already
+                file_name_explicit = parts[2]
+                try:
+                    manual_download(url_to_download, dst_dir_path, file_name_explicit)
+                except Exception as e:
+                    print(f"\n> Download error for explicit link '{link_entry}': {e}")
+            elif len(parts) == 1: # Just a raw URL provided without explicit destination or name
+                url_to_download = parts[0]
+                default_dst_dir = model_dir # Fallback to model_dir for raw URLs
+                default_file_name = _extract_filename(url_to_download)
+                try:
+                    manual_download(url_to_download, default_dst_dir, default_file_name)
+                except Exception as e:
+                    print(f"\n> Download error for raw URL '{link_entry}': {e}")
             else:
-                print(f"\n> Skipping invalid download link: {url}")
+                print(f"\n> Skipping invalid link format: '{link_entry}'")
 
     _unpack_zips()
 
 # manual_download function is updated to use download_file_platform_aware internally
 def manual_download(url, dst_dir, file_name=None, prefix=None):
-    clean_url = url
+    clean_url_for_display = url # Renamed to avoid confusion with the internal `clean_url` in _process_download_link
     image_url, image_name = None, None
 
     if 'civitai' in url:
@@ -607,7 +621,7 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
             return
 
         model_type, file_name = data.model_type, data.model_name    # Type, name
-        clean_url, url = data.clean_url, data.download_url          # Clean_URL, URL
+        clean_url_for_display, url = data.clean_url, data.download_url          # Clean_URL, URL
         image_url, image_name = data.image.url, data.image_name     # Img_URL, Img_Name
 
         # Download preview images using the new platform-aware function
@@ -617,19 +631,18 @@ def manual_download(url, dst_dir, file_name=None, prefix=None):
 
     elif any(s in url for s in ('github', 'huggingface.co')):
         if file_name and '.' not in file_name:
-            file_name += f".{clean_url.split('.')[-1]}"
+            file_name += f".{clean_url_for_display.split('.')[-1]}" # Use clean_url_for_display here
 
     # Formatted info output
-    format_output(clean_url, dst_dir, file_name, image_url, image_name)
+    format_output(clean_url_for_display, dst_dir, file_name, image_url, image_name)
 
     # Downloading using the new platform-aware function
-    if not download_file_platform_aware(url, Path(dst_dir) / file_name if file_name else Path(dst_dir) / Path(url).name, f"Downloading {file_name or Path(url).name}"):
+    if not download_file_platform_aware(url, Path(dst_dir) / file_name if file_name else Path(dst_dir) / Path(urlparse(url).path).name, f"Downloading {file_name or Path(urlparse(url).path).name}"):
         print(f"Failed to download {url}")
 
 
 ''' SubModels - Added URLs '''
 
-# Separation of merged numbers
 def _parse_selection_numbers(num_str, max_num):
     """Split a string of numbers into unique integers, considering max_num as the upper limit."""
     num_str = num_str.replace(',', ' ').strip()
@@ -640,18 +653,15 @@ def _parse_selection_numbers(num_str, max_num):
         if not part.isdigit():
             continue
 
-        # Check if the entire part is a valid number
         part_int = int(part)
         if part_int <= max_num:
             unique_numbers.add(part_int)
-            continue  # No need to split further
+            continue
 
-        # Split the part into valid numbers starting from the longest possible
         current_position = 0
         part_len = len(part)
         while current_position < part_len:
             found = False
-            # Try lengths from max_length down to 1
             for length in range(min(max_length, part_len - current_position), 0, -1):
                 substring = part[current_position:current_position + length]
                 if substring.isdigit():
@@ -662,7 +672,6 @@ def _parse_selection_numbers(num_str, max_num):
                         found = True
                         break
             if not found:
-                # Move to the next character if no valid number found
                 current_position += 1
 
     return sorted(unique_numbers)
@@ -698,9 +707,9 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir, base_url, in
     )
 
 line = ""
-line = handle_submodels(model, model_num, model_list, str(model_dir), line) # Updated dst_dir to use MODEL_DIR from settings
-line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)       # Updated dst_dir to use VAE_DIR from settings
-line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line) # Updated dst_dir to use CONTROL_DIR from settings
+line = handle_submodels(model, model_num, model_list, str(model_dir), line)
+line = handle_submodels(vae, vae_num, vae_list, str(vae_dir), line)
+line = handle_submodels(controlnet, controlnet_num, controlnet_list, str(control_dir), line)
 
 ''' File.txt - added urls '''
 
