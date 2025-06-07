@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 
 # --- START OF MODIFICATION (Version Tracking) ---
-DOWNLOADER_VERSION = "2025.06.08.1_final_paths_fix" # Example Version: YYYY.MM.DD.Iteration_Description
+DOWNLOADER_VERSION = "2025.06.08.3_simplified_model_handling" # Example Version:YYYY.MM.DD.Iteration_Description
 # --- END OF MODIFICATION (Version Tracking) ---
 
 # Platform-aware downloading configuration
@@ -252,6 +252,8 @@ locals().update(settings)
 # Explicitly define model_dir, vae_dir, etc., based on SHARED_MODEL_BASE
 # This bypasses potential issues with settings.json not being fully written/read
 # at script startup or prior manual edits of settings.json.
+from webui_utils import SHARED_MODEL_BASE # Ensure SHARED_MODEL_BASE is imported and used here
+
 model_dir = SHARED_MODEL_BASE / 'Stable-diffusion'
 vae_dir = SHARED_MODEL_BASE / 'vae'
 lora_dir = SHARED_MODEL_BASE / 'Lora' # Assuming consistent naming under shared
@@ -604,7 +606,6 @@ def _process_download_link(link):
 
 def download(line):
     """Downloads files from comma-separated links, processes prefixes, and unpacks zips post-download."""
-    # Use re.split to robustly handle commas and spaces as separators
     for link_entry in filter(None, re.split(r',\s*', line)):
         prefix, url_to_download, filename_for_download, explicit_dst_dir_str = _process_download_link(link_entry)
 
@@ -752,39 +753,14 @@ def handle_submodels(selection, num_selection, model_dict, dst_dir_obj, inpainti
     for m in unique_models.values():
         filename = m['name'] if m['name'] else _extract_filename(m['url'])
         
-        # Prepend the type prefix for clearer parsing in `download` function
-        # This will create strings like "model:http://...[filename]"
-        if Path(m['dst_dir']) == model_dir:
-            prefix_tag = "model"
-        elif Path(m['dst_dir']) == vae_dir:
-            prefix_tag = "vae"
-        elif Path(m['dst_dir']) == lora_dir:
-            prefix_tag = "lora"
-        elif Path(m['dst_dir']) == control_dir:
-            prefix_tag = "control"
-        else:
-            prefix_tag = None # No specific prefix known for this dst_dir, will be handled as raw URL
-
-        # Always include filename in brackets for clarity if it exists
-        if prefix_tag:
-            if filename:
-                formatted_download_entries.append(f"{prefix_tag}:{m['url']}[{filename}]")
-            else:
-                formatted_download_entries.append(f"{prefix_tag}:{m['url']}")
-        else: # Fallback for raw URLs not matching known prefixes
-            if filename:
-                formatted_download_entries.append(f"{m['url']} {m['dst_dir']} {filename}")
-            else:
-                # If no explicit filename, rely on _process_download_link to derive it from URL
-                formatted_download_entries.append(f"{m['url']} {m['dst_dir']}")
-
+        # Original simple format from downloading-en(1).py that works with m_download
+        formatted_download_entries.append(f"{m['url']} {m['dst_dir']} {filename}")
 
     return formatted_download_entries # Return list of strings
     # --- END OF MODIFICATION ---
 
 # Initialize line_entries as an empty list to collect individual download entries
 line_entries = [] 
-# Ensure dst_dir argument to handle_submodels is always a Path object
 line_entries.extend(handle_submodels(model, model_num, model_list, model_dir)) 
 line_entries.extend(handle_submodels(vae, vae_num, vae_list, vae_dir))
 line_entries.extend(handle_submodels(controlnet, controlnet_num, controlnet_list, control_dir))
