@@ -6,7 +6,7 @@ from IPython.display import display, HTML
 # --- Define Absolute Base Path ---
 # This makes file lookups robust and independent of the current working directory.
 try:
-    # This works when run from the notebook via %run
+    # This works when run from the notebook via %run, assuming ANXETY is in the current dir
     BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'ANXETY'))
 except NameError:
     # Fallback for other execution contexts
@@ -83,17 +83,15 @@ controlnet_map = { SD15_DATA_FILE: ["sd15_controlnet_list"], SDXL_DATA_FILE: ["s
 controlnet_options = read_and_combine_data(controlnet_map)
 
 # --- Create Widgets using the combined data ---
-# Use the first item in the list as a safe default to prevent crashes.
-
 # Model Widgets
 model_header = factory.create_header('Model Selection')
 model_default = model_options[0] if model_options else None
-model_widget = factory.create_dropdown(model_options, 'Model:', model_default, 'No models found')
+model_widget = factory.create_dropdown(model_options, 'Model:', model_default)
 
 # LoRA Widgets
 lora_header = factory.create_header('LoRA Selection')
 lora_default = lora_options[0] if lora_options else None
-lora_widget = factory.create_dropdown(lora_options, 'LoRA:', lora_default, 'No LoRAs found')
+lora_widget = factory.create_dropdown(lora_options, 'LoRA:', lora_default)
 lora_strength_widget = widgets.FloatSlider(
     value=0.7, min=0.0, max=1.0, step=0.05, description='LoRA Strength:',
     style={'description_width': 'initial'}, layout=Layout(width='100%')
@@ -103,28 +101,28 @@ lora_strength_widget.add_class('lora-strength')
 # VAE Widgets
 vae_header = factory.create_header('VAE Selection')
 vae_default = vae_options[0] if vae_options else None
-vae_widget = factory.create_dropdown(vae_options, 'VAE:', vae_default, 'No VAEs found')
+vae_widget = factory.create_dropdown(vae_options, 'VAE:', vae_default)
 
 # ControlNet Widgets
 controlnet_header = factory.create_header('ControlNet Selection')
 controlnet_default = [controlnet_options[0]] if controlnet_options else []
-# *** THIS IS THE CORRECTED CODE FOR THE MULTI-SELECT WIDGET ***
 controlnet_widget = widgets.SelectMultiple(
-    options=controlnet_options,
-    value=controlnet_default,
-    description='ControlNet Models:',
-    style={'description_width': 'initial'},
-    layout=Layout(width='100%'),
-    rows=8 # A sensible default for a multi-select list
+    options=controlnet_options, value=controlnet_default, description='ControlNet Models:',
+    style={'description_width': 'initial'}, layout=Layout(width='100%'), rows=8
 )
-# *** END OF CORRECTION ***
-
 
 # Download Options
 download_header = factory.create_header('Download Options')
-download_button = factory.create_button('Download Selected', 'primary', 'download')
-config_name_widget = factory.create_text('Config Name:', '', 'e.g. my-config')
-save_config_widget = factory.create_button('Save Config', 'success', 'floppy-o', class_names=['save-button'])
+# *** THIS IS THE CORRECTED CODE FOR THE BUTTONS ***
+# The factory.create_button only accepts (description, button_style)
+download_button = factory.create_button('Download Selected', 'primary')
+config_name_widget = factory.create_text('Config Name:', placeholder='e.g. my-config')
+save_config_widget = factory.create_button('Save Config', 'success')
+# Manually add classes if needed, as the factory doesn't handle it for buttons
+download_button.add_class('download-button')
+save_config_widget.add_class('save-button')
+# *** END OF CORRECTION ***
+
 
 # Display all widgets
 display(
