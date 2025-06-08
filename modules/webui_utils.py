@@ -1,4 +1,4 @@
-""" WebUI Utils Module | by ANXETY """
+# ~ WebUI Utils Module | by ANXETY ~
 
 import json_utils as js    # JSON
 
@@ -101,7 +101,8 @@ def _set_webui_paths(ui):
         if '_dir' in key and 'extension_dir' not in key and 'output_dir' not in key and 'config_dir' not in key:
             Path(path_str).mkdir(parents=True, exist_ok=True)
             
-    js.update(SETTINGS_PATH, 'WEBUI', path_config)
+    # Use js.save instead of js.update to ensure the 'WEBUI' key is created if it doesn't exist
+    js.save(SETTINGS_PATH, 'WEBUI', path_config)
 
 def handle_setup_timer(webui_path, timer_webui):
     """Manage timer persistence for WebUI instances."""
