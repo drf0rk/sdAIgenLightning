@@ -2,22 +2,42 @@
 
 lora_data = {
     "sd15_loras": {
-        "1. Example SD1.5 LoRA A": [
-            {'url': "https://civitai.com/api/download/models/YOUR_SD15_LORA_ID_A", 'name': "sd15_lora_a.safetensors"}
-        ],
-        "2. Example SD1.5 LoRA B": [
-            {'url': "https://civitai.com/api/download/models/YOUR_SD15_LORA_ID_B", 'name': "sd15_lora_b.safetensors"}
-        ]
-        # Add your own SD 1.5 LoRA entries here
+        "1. Lora_112806": [{'url': "https://civitai.com/api/download/models/112806?type=Model&format=SafeTensor", 'name': "Lora_112806.safetensors"}],
+        "2. Lora_167994": [{'url': "https://civitai.com/api/download/models/167994?type=Model&format=SafeTensor", 'name': "Lora_167994.safetensors"}],
+        "3. ppussy": [{'url': "https://huggingface.co/Remphanstar/Rojos/resolve/main/ppussy.safetensors", 'name': "ppussy.safetensors"}],
+        "4. brothaman": [{'url': "https://huggingface.co/maximstar00/cute_pussy/resolve/main/brothaman.safetensors", 'name': "brothaman.safetensors"}],
+        "5. Lora_170310": [{'url': "https://civitai.com/api/download/models/170310?type=Model&format=SafeTensor", 'name': "Lora_170310.safetensors"}],
+        "6. Lora_58951": [{'url': "https://civitai.com/api/download/models/58951?type=Model&format=SafeTensor", 'name': "Lora_58951.safetensors"}],
+        "7. Lora_58906": [{'url': "https://civitai.com/api/download/models/58906?type=Model&format=SafeTensor", 'name': "Lora_58906.safetensors"}],
+        "8. Lora_283261": [{'url': "https://civitai.com/api/download/models/283261?type=Model&format=SafeTensor", 'name': "Lora_283261.safetensors"}],
+        "9. Lora_45127": [{'url': "https://civitai.com/api/download/models/45127?type=Model&format=SafeTensor", 'name': "Lora_45127.safetensors"}],
+        "10. Lora_63998": [{'url': "https://civitai.com/api/download/models/63998?type=Model&format=SafeTensor", 'name': "Lora_63998.safetensors"}],
+        "11. Lora_174016": [{'url': "https://civitai.com/api/download/models/174016?type=Model&format=SafeTensor", 'name': "Lora_174016.safetensors"}],
+        "12. Lora_344345": [{'url': "https://civitai.com/api/download/models/344345?type=Model&format=SafeTensor", 'name': "Lora_344345.safetensors"}],
+        "13. Lora_144437": [{'url': "https://civitai.com/api/download/models/144437?type=Model&format=SafeTensor", 'name': "Lora_144437.safetensors"}],
+        "14. Lora_50851": [{'url': "https://civitai.com/api/download/models/50851?type=Model&format=SafeTensor", 'name': "Lora_50851.safetensors"}],
+        "15. Lora_44430": [{'url': "https://civitai.com/api/download/models/44430?type=Model&format=SafeTensor", 'name': "Lora_44430.safetensors"}],
+        "16. Lora_20546": [{'url': "https://civitai.com/api/download/models/20546?type=Model&format=SafeTensor&size=full&fp=fp16", 'name': "Lora_20546.safetensors"}],
+        "17. Lora_332880": [{'url': "https://civitai.com/api/download/models/332880?type=Model&format=SafeTensor", 'name': "Lora_332880.safetensors"}],
+        "18. Lora_169692": [{'url': "https://civitai.com/api/download/models/169692?type=Model&format=SafeTensor", 'name': "Lora_169692.safetensors"}],
+        "19. Lora_110260": [{'url': "https://civitai.com/api/download/models/110260?type=Model&format=SafeTensor", 'name': "Lora_110260.safetensors"}],
     },
     "sdxl_loras": {
-        "1. nudify-xl": [
-            {'url': "https://civitai.com/models/9025?modelVersionId=177674", 'name': "nudify_xl_lite.safetensors"}
-        ],
-        "2. Example LoRA 2 (another option)": [
-            {'url': "https://civitai.com/models/10364?modelVersionId=12873", 'name': "innievag.safetensors"}
-        ]
-        # Add your own SDXL LoRA entries here
+        "1. Lora_1030934": [{'url': "https://civitai.com/api/download/models/1030934?type=Model&format=SafeTensor", 'name': "Lora_1030934.safetensors"}],
+        "2. Lora_859154": [{'url': "https://civitai.com/api/download/models/859154?type=Model&format=SafeTensor", 'name': "Lora_859154.safetensors"}],
+        "3. Lora_393888": [{'url': "https://civitai.com/api/download/models/393888?type=Model&format=SafeTensor", 'name': "Lora_393888.safetensors"}],
+        "4. Lora_1567868": [{'url': "https://civitai.com/api/download/models/1567868?type=Model&format=SafeTensor", 'name': "Lora_1567868.safetensors"}],
+        "5. Lora_518802": [{'url': "https://civitai.com/api/download/models/518802?type=Model&format=SafeTensor", 'name': "Lora_518802.safetensors"}],
+        "6. Lora_177674": [{'url': "https://civitai.com/api/download/models/177674?type=Model&format=SafeTensor", 'name': "Lora_177674.safetensors"}],
+        "7. Lora_802232": [{'url': "https://civitai.com/api/download/models/802232?type=Model&format=SafeTensor", 'name': "Lora_802232.safetensors"}],
+        "8. Lora_1604857": [{'url': "https://civitai.com/api/download/models/1604857?type=Model&format=SafeTensor", 'name': "Lora_1604857.safetensors"}],
+        "9. Lora_686514": [{'url': "https://civitai.com/api/download/models/686514?type=Model&format=SafeTensor", 'name': "Lora_686514.safetensors"}],
+        "10. Lora_160240": [{'url': "https://civitai.com/api/download/models/160240?type=Model&format=SafeTensor", 'name': "Lora_160240.safetensors"}],
+        "11. Lora_427792": [{'url': "https://civitai.com/api/download/models/427792?type=Model&format=SafeTensor", 'name': "Lora_427792.safetensors"}],
+        "12. Lora_624818": [{'url': "https://civitai.com/api/download/models/624818?type=Model&format=SafeTensor", 'name': "Lora_624818.safetensors"}],
+        "13. Lora_567342": [{'url': "https://civitai.com/api/download/models/567342?type=Model&format=SafeTensor", 'name': "Lora_567342.safetensors"}],
+        "14. Lora_478142": [{'url': "https://civitai.com/api/download/models/478142?type=Model&format=SafeTensor", 'name': "Lora_478142.safetensors"}],
+        "15. Lora_1627770": [{'url': "https://civitai.com/api/download/models/1627770?type=Model&format=SafeTensor", 'name': "Lora_1627770.safetensors"}],
+        "16. Lora_717403": [{'url': "https://civitai.com/api/download/models/717403?type=Model&format=SafeTensor", 'name': "Lora_717403.safetensors"}],
     }
 }
-
