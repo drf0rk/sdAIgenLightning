@@ -86,6 +86,20 @@ async def download_configuration():
         'https://github.com/anxety-solo/anxety-theme',
         'https://github.com/anxety-solo/sd-civitai-browser-plus Civitai-Browser-Plus',
 
+        ## NEW Extensions
+        'https://github.com/Haoming02/sd-webui-mosaic-outpaint',
+        'https://github.com/continue-revolution/sd-webui-segment-anything',
+        'https://github.com/kainatquaderee/sd-webui-reactor-Nsfw_freedom',
+        'https://github.com/a2569875/lora-prompt-tool',
+        'https://github.com/Uminosachi/sd-webui-inpaint-anything',
+        'https://github.com/redmercy69/sd-webui-stripper',
+        'https://github.com/diffus-me/sd-webui-facefusion',
+        'https://github.com/glucauze/sd-webui-faceswaplab',
+        'https://github.com/IntellectzProductions/sd-webui-faceswap',
+        'https://github.com/yownas/sd-webui-faceswapper',
+        'https://github.com/leeguandong/sd_webui_outpainting',
+        'https://github.com/thoraxe69/sd-webui-roop',
+
         ## Gutris1
         'https://github.com/gutris1/sd-image-viewer Image-Viewer',
         'https://github.com/gutris1/sd-image-info Image-Info',
@@ -93,17 +107,6 @@ async def download_configuration():
 
         ## OTHER | ON
         'https://github.com/Bing-su/adetailer',
-
-        ## OTHER | OFF
-        # 'https://github.com/thomasasfk/sd-webui-aspect-ratio-helper Aspect-Ratio-Helper',
-        # 'https://github.com/Mikubill/sd-webui-controlnet ControlNet',
-        # 'https://github.com/zanllp/sd-webui-infinite-image-browsing Infinite-Image-Browsing',
-        # 'https://github.com/hako-mikan/sd-webui-regional-prompter Regional-Prompter',
-        # 'https://github.com/ilian6806/stable-diffusion-webui-state State',
-        # 'https://github.com/hako-mikan/sd-webui-supermerger Supermerger',
-        # 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete TagComplete',
-        # 'https://github.com/Tsukreya/Umi-AI-Wildcards',
-        # 'https://github.com/picobyte/stable-diffusion-webui-wd14-tagger wd14-tagger'
     ]
     if ENV_NAME == 'Kaggle':
         extensions_list.append('https://github.com/gutris1/sd-encrypt-image Encrypt-Image')
@@ -137,8 +140,6 @@ def unpack_webui():
         WEBUI / 'Lora',
         WEBUI / 'embeddings',
         WEBUI / 'ControlNet',
-        # Add any other subdirectories that might contain large model files
-        # but are not needed within the UI's specific folder.
     ]
 
     print(f"🧹 Cleaning up unzipped model-related directories within {UI}...")
@@ -156,4 +157,3 @@ if __name__ == '__main__':
     with capture.capture_output():
         unpack_webui()
         asyncio.run(download_configuration())
-
