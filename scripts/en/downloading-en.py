@@ -70,23 +70,35 @@ def handle_submodels(selections, model_dict, dst_dir, inpainting=False):
     
     cleaned_selections = [re.sub(r'^\d+\.\s*', '', sel) for sel in selections]
     
+    # --- INTERNAL DEBUG START ---
+    print(f"DEBUG_INTERNAL: Processing selections: {selections}")
+    print(f"DEBUG_INTERNAL: Cleaned selections: {cleaned_selections}")
+    print(f"DEBUG_INTERNAL: Model dict keys (first 5): {list(model_dict.keys())[:5]}")
+    # --- INTERNAL DEBUG END ---
+
     for selection_name in cleaned_selections:
         if selection_name in ['none']: continue
         if selection_name == 'ALL':
             for model_group in model_dict.values():
                 if isinstance(model_group, list):
                     for item in model_group:
-                         download_list.append(f"{item['url']} {dst_dir} {item.get('name')}") # Removed quotes
+                         download_list.append(f"{item['url']} {dst_dir} {item.get('name')}")
             continue
         
         if selection_name in model_dict:
             model_group = model_dict[selection_name]
+            # --- INTERNAL DEBUG START ---
+            print(f"DEBUG_INTERNAL: Found '{selection_name}' in model_dict. Model group type: {type(model_group)}")
+            # --- INTERNAL DEBUG END ---
             if isinstance(model_group, list):
                  for model_info in model_group:
                     name = model_info.get('name') or os.path.basename(model_info['url'])
                     if not inpainting and "inpainting" in name.lower():
+                        # --- INTERNAL DEBUG START ---
+                        print(f"DEBUG_INTERNAL: Skipping {name} due to inpainting filter.")
+                        # --- INTERNAL DEBUG END ---
                         continue
-                    download_list.append(f"{model_info['url']} {dst_dir} {name}") # Removed quotes
+                    download_list.append(f"{model_info['url']} {dst_dir} {name}")
     return download_list
 
 # --- Main Execution ---
@@ -106,6 +118,11 @@ if latest_webui or latest_extensions:
     print(f"✨ Update {action} Completed!")
 
 print('📦 Processing download selections...')
+# DEBUG statements moved to notebook cell based on previous interaction for direct visibility.
+# These lines were intended to be in the notebook cell for direct output:
+# print(f"DEBUG: Selected Models: {model_selections}")
+# print(f"DEBUG: Selected VAEs: {vae_selections}")
+
 line_entries = []
 line_entries.extend(handle_submodels(model_selections, model_list, model_dir, inpainting_model))
 line_entries.extend(handle_submodels(vae_selections, vae_list, vae_dir))
