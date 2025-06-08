@@ -8,7 +8,7 @@ from IPython.display import display, HTML
 try:
     # This works when run from the notebook via %run
     BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'ANXETY'))
-except:
+except NameError:
     # Fallback for other execution contexts
     BASE_DIR = "/teamspace/studios/this_studio/ANXETY"
 
@@ -82,7 +82,6 @@ vae_options = read_and_combine_data(vae_map)
 controlnet_map = { SD15_DATA_FILE: ["sd15_controlnet_list"], SDXL_DATA_FILE: ["sdxl_controlnet_list"] }
 controlnet_options = read_and_combine_data(controlnet_map)
 
-
 # --- Create Widgets using the combined data ---
 # Use the first item in the list as a safe default to prevent crashes.
 
@@ -116,9 +115,10 @@ controlnet_widget = widgets.SelectMultiple(
     description='ControlNet Models:',
     style={'description_width': 'initial'},
     layout=Layout(width='100%'),
-    rows=8
+    rows=8 # A sensible default for a multi-select list
 )
 # *** END OF CORRECTION ***
+
 
 # Download Options
 download_header = factory.create_header('Download Options')
