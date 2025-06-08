@@ -1,6 +1,7 @@
 import os
 import sys
-from IPython.display import display, clear_output
+import ast
+from IPython.display import display
 
 # Define paths relative to the script location
 # This makes the script more portable
@@ -8,8 +9,10 @@ SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 MODULES_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, '../../modules'))
 sys.path.append(MODULES_DIR)
 
+# Correctly import from ipywidgets and widget_factory
+from ipywidgets import widgets, Layout
 from widget_factory import WidgetFactory
-from json_utils import read_json_data
+
 
 # =================================================================================
 # == HELPER FUNCTION TO READ AND COMBINE DATA FROM NEW SCRIPT FILES
@@ -26,8 +29,11 @@ def read_and_combine_data(file_map):
     all_options = []
     
     for file_path, dict_names in file_map.items():
+        # Correct the path to be absolute based on the scripts directory
+        absolute_file_path = os.path.abspath(os.path.join(SCRIPTS_DIR, '..', file_path))
+        
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(absolute_file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             local_scope = {}
@@ -45,9 +51,9 @@ def read_and_combine_data(file_map):
                     else:
                         all_options.extend(list(data_dict.keys()))
         except FileNotFoundError:
-            print(f"Warning: Data file not found at {file_path}. Skipping.")
+            print(f"Warning: Data file not found at {absolute_file_path}. Skipping.")
         except Exception as e:
-            print(f"Error reading {file_path}: {e}")
+            print(f"Error reading {absolute_file_path}: {e}")
             
     # Remove duplicates and sort
     return sorted(list(set(all_options)))
@@ -60,9 +66,10 @@ def read_and_combine_data(file_map):
 factory = WidgetFactory()
 
 # --- Define File Paths ---
-SD15_MODELS_FILE = os.path.join(SCRIPTS_DIR, '../../scripts/_sd15_models-data.py')
-SDXL_MODELS_FILE = os.path.join(SCRIPTS_DIR, '../../scripts/_sdxl_models-data.py')
-LORAS_FILE = os.path.join(SCRIPTS_DIR, '../../scripts/_loras-data.py')
+# Paths are relative to the 'scripts' directory where this file should be
+SD15_MODELS_FILE = '_sd15_models-data.py'
+SDXL_MODELS_FILE = '_sdxl_models-data.py'
+LORAS_FILE = '_loras-data.py'
 
 # --- Read and Combine Data for Widgets ---
 model_map = {
