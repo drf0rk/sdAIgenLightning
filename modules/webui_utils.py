@@ -77,6 +77,7 @@ def _set_webui_paths(ui):
     actual_diffusion_subdir = 'diffusion_models'
 
     path_config = {
+        'webui_path': str(webui_root), # Add the main webui_path here
         'model_dir': str(models_root / actual_checkpoint_subdir),
         'vae_dir': str(models_root / actual_vae_subdir),
         'lora_dir': str(models_root / actual_lora_subdir),
@@ -93,7 +94,7 @@ def _set_webui_paths(ui):
         # Extensions and outputs usually remain UI-specific
         'extension_dir': str(webui_root / extension_subdir),
         'output_dir': str(webui_root / output_subdir),
-        'config_dir': str(webui_root / ('user/default' if is_comfy else '')) # ComfyUI has a specific user/default config path
+        'config_dir': str(webui_root / ('user/default' if is_comfy else ''))
     }
 
     # Ensure all new shared directories exist
@@ -101,7 +102,6 @@ def _set_webui_paths(ui):
         if '_dir' in key and 'extension_dir' not in key and 'output_dir' not in key and 'config_dir' not in key:
             Path(path_str).mkdir(parents=True, exist_ok=True)
             
-    # Use js.save instead of js.update to ensure the 'WEBUI' key is created if it doesn't exist
     js.save(SETTINGS_PATH, 'WEBUI', path_config)
 
 def handle_setup_timer(webui_path, timer_webui):
