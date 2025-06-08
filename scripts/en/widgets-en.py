@@ -1,20 +1,15 @@
 import os
 import sys
 import ast
-from IPython.display import display
+from IPython.display import display, HTML
 
 # --- Define Absolute Base Path ---
 # This makes file lookups robust and independent of the current working directory.
-try:
-    # This works when run from the notebook via %run
-    BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'ANXETY'))
-except:
-    # Fallback for other execution contexts
-    BASE_DIR = "/teamspace/studios/this_studio/ANXETY"
-
+BASE_DIR = "/teamspace/studios/this_studio/ANXETY"
 MODULES_DIR = os.path.join(BASE_DIR, 'modules')
 SCRIPTS_DIR = os.path.join(BASE_DIR, 'scripts')
-sys.path.append(MODULES_DIR)
+if MODULES_DIR not in sys.path:
+    sys.path.append(MODULES_DIR)
 
 # Correctly import from ipywidgets and widget_factory
 from ipywidgets import widgets, Layout
@@ -64,27 +59,19 @@ def read_and_combine_data(file_map):
 # Create a factory instance
 factory = WidgetFactory()
 
-# --- Define Absolute File Paths to your new data scripts ---
+# --- Define Absolute File Paths to your data scripts ---
 SD15_DATA_FILE = os.path.join(SCRIPTS_DIR, '_models-data.py')
 SDXL_DATA_FILE = os.path.join(SCRIPTS_DIR, '_xl-models-data.py')
 LORAS_FILE = os.path.join(SCRIPTS_DIR, '_loras-data.py')
 
 # --- Read and Combine Data for Widgets ---
-model_map = {
-    SD15_DATA_FILE: ["sd15_model_data"],
-    SDXL_DATA_FILE: ["sdxl_models_data"]
-}
+model_map = { SD15_DATA_FILE: ["sd15_model_data"], SDXL_DATA_FILE: ["sdxl_models_data"] }
 model_options = read_and_combine_data(model_map)
 
-lora_map = {
-    LORAS_FILE: ["lora_data"]
-}
+lora_map = { LORAS_FILE: ["lora_data"] }
 lora_options = read_and_combine_data(lora_map)
 
-vae_map = {
-    SD15_DATA_FILE: ["sd15_vae_data"],
-    SDXL_DATA_FILE: ["sdxl_vae_data"]
-}
+vae_map = { SD15_DATA_FILE: ["sd15_vae_data"], SDXL_DATA_FILE: ["sdxl_vae_data"] }
 vae_options = read_and_combine_data(vae_map)
 
 # --- Create Widgets using the combined data ---
@@ -99,23 +86,31 @@ model_widget = factory.create_dropdown(model_options, 'Model:', model_default, '
 lora_header = factory.create_header('LoRA Selection')
 lora_default = lora_options[0] if lora_options else None
 lora_widget = factory.create_dropdown(lora_options, 'LoRA:', lora_default, 'No LoRAs found')
-lora_strength_widget = factory.create_float_slider(0.7, 0, 1, 'LoRA Strength:', class_names=['lora-strength'])
+
+# *** THIS IS THE CORRECTED CODE FOR THE SLIDER WIDGET ***
+lora_strength_widget = widgets.FloatSlider(
+    value=0.7,
+    min=0.0,
+    max=1.0,
+    step=0.05,
+    description='LoRA Strength:',
+    style={'description_width': 'initial'},
+    layout=Layout(width='100%')
+)
+lora_strength_widget.add_class('lora-strength')
+# *** END OF CORRECTION ***
 
 # VAE Widgets
 vae_header = factory.create_header('VAE Selection')
 vae_default = vae_options[0] if vae_options else None
 vae_widget = factory.create_dropdown(vae_options, 'VAE:', vae_default, 'No VAEs found')
 
-# ControlNet Widgets (Assuming these are static or handled differently)
+# ControlNet Widgets
 controlnet_header = factory.create_header('ControlNet Selection')
-controlnet_map = {
-    SD15_DATA_FILE: ["sd15_controlnet_list"],
-    SDXL_DATA_FILE: ["sdxl_controlnet_list"]
-}
+controlnet_map = { SD15_DATA_FILE: ["sd15_controlnet_list"], SDXL_DATA_FILE: ["sdxl_controlnet_list"] }
 controlnet_options = read_and_combine_data(controlnet_map)
 controlnet_default = controlnet_options[0] if controlnet_options else None
 controlnet_widget = factory.create_multiselect(controlnet_options, 'ControlNet Models:', [controlnet_default] if controlnet_default else [])
-
 
 # Download Options
 download_header = factory.create_header('Download Options')
