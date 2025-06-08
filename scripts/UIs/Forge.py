@@ -4,7 +4,7 @@ from Manager import m_download, m_clone    # Every Download | Clone
 import json_utils as js                    # JSON
 
 from IPython.display import clear_output
-from IPython.utils import capture
+# from IPython.utils import capture # REMOVED: To show verbose output
 from IPython import get_ipython
 from pathlib import Path
 import subprocess
@@ -111,7 +111,7 @@ async def download_configuration():
 
         ## OTHER | OFF
         # 'https://github.com/thomasasfk/sd-webui-aspect-ratio-helper Aspect-Ratio-Helper',
-        # 'https://github.com/zanllp/sd-webui-infinite-image-browsing Infinite-Image-Browsing',
+        # 'https://github.com/zanllp/sd-webui-infinite-image-Browse Infinite-Image-Browse',
         # 'https://github.com/Haoming02/sd-forge-couple SD-Couple',
         # 'https://github.com/ilian6806/stable-diffusion-webui-state State',
         # 'https://github.com/hako-mikan/sd-webui-supermerger Supermerger',
@@ -129,8 +129,8 @@ async def download_configuration():
     for command in extensions_list:
         tasks.append(asyncio.create_subprocess_shell(
             f"git clone --depth 1 {command}",
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stdout=subprocess.DEVNULL, # Keep stdout for errors
+            stderr=subprocess.DEVNULL  # Keep stderr for errors
         ))
 
     await asyncio.gather(*tasks)
@@ -139,9 +139,10 @@ def unpack_webui():
     """Unpacks the WebUI zip file and cleans up model-related directories."""
     zip_path = f"{HOME}/{UI}.zip"
     m_download(f"{REPO_URL} {HOME} {UI}.zip")
-    ipySys(f"unzip -q -o {zip_path} -d {WEBUI}")
+    # ipySys(f"unzip -q -o {zip_path} -d {WEBUI}") # REMOVED -q for verbose output
+    ipySys(f"unzip -o {zip_path} -d {WEBUI}") # Show unzip output
     ipySys(f"rm -rf {zip_path}")
-
+    
     # --- START OF MODIFICATION ---
     # Define model-related directories that should NOT be in the WebUI folder
     # as they are handled by the shared model base.
@@ -167,7 +168,6 @@ def unpack_webui():
 
 ## ====================== MAIN CODE ======================
 if __name__ == '__main__':
-    with capture.capture_output():
-        unpack_webui()
-        asyncio.run(download_configuration())
-
+    # with capture.capture_output(): # REMOVED: To show verbose output
+    unpack_webui()
+    asyncio.run(download_configuration())
