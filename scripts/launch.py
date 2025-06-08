@@ -39,7 +39,7 @@ def detect_and_optimize_platform():
             pass
 
         if os.path.exists('/kaggle'):
-            platform = 'kaggle'
+            return 'kaggle'
         elif (os.environ.get('LIGHTNING_CLOUD_PROJECT_ID') or
               os.environ.get('LIGHTNING_AI') or
               os.path.exists('/teamspace') or
@@ -169,9 +169,10 @@ def load_settings(path):
         print(f"Error loading settings: {e}")
         return {}
 
-# Load settings
+# Load settings upfront so all variables are defined
 settings = load_settings(SETTINGS_PATH)
-locals().update(settings)
+locals().update(settings) # This populates zrok_token, ngrok_token, etc.
+
 
 ## ====================== Helpers ========================
 
@@ -207,7 +208,8 @@ def _update_config_paths():
 
 def get_launch_command():
     """Construct launch command based on configuration"""
-    base_args = commandline_arguments
+    # Ensure commandline_arguments is from the loaded settings
+    base_args = settings.get('commandline_arguments', '') # Safely get from settings
     password = 'ha4ez7147b5vdlu5u8f8flrllgn61kpbgbh6emil'
 
     common_args = ' --enable-insecure-extension-access --disable-console-progressbars --theme dark'
@@ -215,8 +217,10 @@ def get_launch_command():
         common_args += f" --encrypt-pass={password}"
 
     # Accent Color For Anxety-Theme
-    if theme_accent != 'anxety':
-        common_args += f" --anxety {theme_accent}"
+    # Ensure theme_accent is from the loaded settings
+    theme_accent_val = settings.get('theme_accent', 'anxety') # Safely get from settings
+    if theme_accent_val != 'anxety':
+        common_args += f" --anxety {theme_accent_val}"
 
     if UI == 'ComfyUI':
         return f"python3 main.py {base_args}"
@@ -232,8 +236,13 @@ def get_launch_command():
 class TunnelManager:
     """Class for managing tunnel services"""
 
-    def __init__(self, tunnel_port):
+    def __init__(
+        self,
+        tunnel_port,
+        ngrok_token_param=None  # Removed zrok_token_param
+    ):
         self.tunnel_port = tunnel_port
+        self.ngrok_token = ngrok_token_param # Removed zrok_token
         self.tunnels = []
         self.error_reasons = []
         self.public_ip = self._get_public_ip()
@@ -275,7 +284,7 @@ class TunnelManager:
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command_to_run),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
+                stderr=asyncio.STDOUT
             )
 
             start_time = time.time()
@@ -313,7 +322,7 @@ class TunnelManager:
                 return True, None
 
             error_msg = '\n'.join(output[-3:]) or 'No output received'
-            return False, f"{error_msg[:300]}..."
+            return False, f"Process error: {error_msg[:300]}..."
 
         except Exception as e:
             return False, f"Process error: {str(e)}"
@@ -345,24 +354,22 @@ class TunnelManager:
             # })
         ]
 
-        if zrok_token:
-            env_path = HOME / '.zrok/environment.json'
-            current_token = None
+        # Removed Zrok token block
+        # if self.zrok_token:
+        #     env_path = HOME / '.zrok/environment.json'
+        #     current_token = None
+        #     if env_path.exists():
+        #         with open(env_path, 'r') as f:
+        #             current_token = json.load(f).get('zrok_token')
+        #     if current_token != self.zrok_token:
+        #         ipySys('zrok disable &> /dev/null')
+        #         ipySys(f"zrok enable {self.zrok_token} &> /dev/null")
+        #     services.append(('Zrok', {
+        #         'command': f"zrok share public http://localhost:{self.tunnel_port}/ --headless",
+        #         'pattern': re.compile(r'[\w-]+\.share\.zrok\.io')
+        #     }))
 
-            if env_path.exists():
-                with open(env_path, 'r') as f:
-                    current_token = json.load(f).get('zrok_token')
-
-            if current_token != zrok_token:
-                ipySys('zrok disable &> /dev/null')
-                ipySys(f"zrok enable {zrok_token} &> /dev/null")
-
-            services.append(('Zrok', {
-                'command': f"zrok share public http://localhost:{self.tunnel_port}/ --headless",
-                'pattern': re.compile(r'[\w-]+\.share\.zrok\.io')
-            }))
-
-        if ngrok_token:
+        if self.ngrok_token: # Use self.ngrok_token from instance variable
             config_path = HOME / '.config/ngrok/ngrok.yml'
             current_token = None
 
@@ -370,8 +377,8 @@ class TunnelManager:
                 with open(config_path, 'r') as f:
                     current_token = yaml.safe_load(f).get('agent', {}).get('authtoken')
 
-            if current_token != ngrok_token:
-                ipySys(f"ngrok config add-authtoken {ngrok_token}")
+            if current_token != self.ngrok_token: # Use self.ngrok_token
+                ipySys(f"ngrok config add-authtoken {self.ngrok_token}")
 
             # NOTE: Commenting out Ngrok as the executable is likely missing or has permission issues.
             # services.append(('Ngrok', {
@@ -424,7 +431,11 @@ if __name__ == '__main__':
 
     # Initialize tunnel manager and services
     tunnel_port = 8188 if UI == 'ComfyUI' else 7860
-    tunnel_mgr = TunnelManager(tunnel_port)
+    # Pass tokens from loaded settings to TunnelManager instance
+    tunnel_mgr = TunnelManager(
+        tunnel_port,
+        ngrok_token_param=settings.get('ngrok_token') # Removed zrok_token_param
+    )
 
     # Run async setup
     loop = asyncio.new_event_loop()
@@ -472,7 +483,7 @@ if __name__ == '__main__':
                 print(f"  - {error['name']}: {error['reason']}")
             print()
 
-        print(f"🔧 WebUI: \033[34m{UI}\033[0m")
+        print(f"🔧 WebUI: \033[34m{UI}\003[0m")
 
         try:
             ipySys(LAUNCHER)
@@ -480,9 +491,11 @@ if __name__ == '__main__':
             pass
 
     # Post-execution cleanup
-    if zrok_token:
-        ipySys('zrok disable &> /dev/null')
-        print('/n🔐 Zrok tunnel disabled :3')
+    # Removed Zrok cleanup block
+    # zrok_token_final = settings.get('zrok_token')
+    # if zrok_token_final:
+    #     ipySys('zrok disable &> /dev/null')
+    #     print('/n🔐 Zrok tunnel disabled :3')
 
     # Display session duration
     try:
