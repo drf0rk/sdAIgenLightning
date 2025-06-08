@@ -142,7 +142,7 @@ SETTINGS_PATH = SCR_PATH / 'settings.json'
 
 ENV_NAME = js.read(SETTINGS_PATH, 'ENVIRONMENT.env_name')
 UI = js.read(SETTINGS_PATH, 'WEBUI.current')
-WEBUI = js.read(SETTINGS_PATH, 'WEBUI.webui_path')
+WEBUI = Path(js.read(SETTINGS_PATH, 'WEBUI.webui_path')) # Ensure WEBUI is a Path object
 
 
 BIN = str(VENV / 'bin')
@@ -171,7 +171,7 @@ def load_settings(path):
 
 # Load settings upfront so all variables are defined
 settings = load_settings(SETTINGS_PATH)
-locals().update(settings) # This populates zrok_token, ngrok_token, etc.
+locals().update(settings) # This populates ngrok_token, etc.
 
 
 ## ====================== Helpers ========================
@@ -199,7 +199,7 @@ def _update_config_paths():
         'sd_vae': 'None'
     }
 
-    config_file = f"{WEBUI}/config.json"
+    config_file = WEBUI / 'config.json' # Ensure config_file is a Path object
     for key, value in config_mapping.items():
         if js.key_exists(config_file, key):
             js.update(config_file, key, str(value))
@@ -239,10 +239,10 @@ class TunnelManager:
     def __init__(
         self,
         tunnel_port,
-        ngrok_token_param=None  # Removed zrok_token_param
+        ngrok_token_param=None
     ):
         self.tunnel_port = tunnel_port
-        self.ngrok_token = ngrok_token_param # Removed zrok_token
+        self.ngrok_token = ngrok_token_param
         self.tunnels = []
         self.error_reasons = []
         self.public_ip = self._get_public_ip()
@@ -269,7 +269,7 @@ class TunnelManager:
         print('\033[33m>> Tunnels:\033[0m')
         while True:
             service_name = await self.checking_queue.get()
-            print(f"- 🕒 Checking \033[36m{service_name}\033[0m...")
+            print(f"- 🕒 Checking \033[36m{service_name}\003[0m...")
             self.checking_queue.task_done()
 
     async def _test_tunnel(self, name, config):
@@ -284,7 +284,7 @@ class TunnelManager:
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command_to_run),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.STDOUT
+                stderr=asyncio.subprocess.STDOUT
             )
 
             start_time = time.time()
@@ -354,21 +354,6 @@ class TunnelManager:
             # })
         ]
 
-        # Removed Zrok token block
-        # if self.zrok_token:
-        #     env_path = HOME / '.zrok/environment.json'
-        #     current_token = None
-        #     if env_path.exists():
-        #         with open(env_path, 'r') as f:
-        #             current_token = json.load(f).get('zrok_token')
-        #     if current_token != self.zrok_token:
-        #         ipySys('zrok disable &> /dev/null')
-        #         ipySys(f"zrok enable {self.zrok_token} &> /dev/null")
-        #     services.append(('Zrok', {
-        #         'command': f"zrok share public http://localhost:{self.tunnel_port}/ --headless",
-        #         'pattern': re.compile(r'[\w-]+\.share\.zrok\.io')
-        #     }))
-
         if self.ngrok_token: # Use self.ngrok_token from instance variable
             config_path = HOME / '.config/ngrok/ngrok.yml'
             current_token = None
@@ -434,20 +419,28 @@ if __name__ == '__main__':
     # Pass tokens from loaded settings to TunnelManager instance
     tunnel_mgr = TunnelManager(
         tunnel_port,
-        ngrok_token_param=settings.get('ngrok_token') # Removed zrok_token_param
+        ngrok_token_param=settings.get('ngrok_token')
     )
 
     # Run async setup
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    tunnels, total, success, errors = loop.run_until_complete(tunnel_mgr.setup_tunnels())
+    try:
+        tunnels, total, success, errors = loop.run_until_complete(tunnel_mgr.setup_tunnels())
+    except Exception as e:
+        print(f"Error during tunnel setup: {e}")
+        tunnels, total, success, errors = [], 0, 0, 0 # Fallback if no tunnels are added
 
     # Set up tunneling service
     tunnelingService = Tunnel(tunnel_port)
     tunnelingService.logger.setLevel(logging.DEBUG)
 
-    for tunnel in tunnels:
-        tunnelingService.add_tunnel(**tunnel)
+    # Only add tunnels if any were successfully created
+    if tunnels:
+        for tunnel in tunnels:
+            tunnelingService.add_tunnel(**tunnel)
+    else:
+        print("No tunnels were successfully established.") # Inform user if no tunnels are added
 
     clear_output(wait=True)
 
@@ -456,52 +449,72 @@ if __name__ == '__main__':
     _update_config_paths()
     LAUNCHER = get_launch_command()
 
+    # Ensure the static directory exists before writing the timer file
+    static_dir = WEBUI / 'static'
+    static_dir.mkdir(parents=True, exist_ok=True) # Create static directory
+    
     # Setup pinggy timer
-    ipySys(f"echo -n {int(time.time())+(3600+20)} > {WEBUI}/static/timer-pinggy.txt")
+    ipySys(f"echo -n {int(time.time())+(3600+20)} > {static_dir}/timer-pinggy.txt")
 
-    with tunnelingService:
+    # Only proceed with tunnelingService if there are tunnels to manage
+    if tunnels:
+        with tunnelingService:
+            CD(WEBUI)
+
+            if UI == 'ComfyUI':
+                COMFYUI_SETTINGS_PATH = SCR_PATH / 'ComfyUI.json'
+                if check_custom_nodes_deps:
+                    ipySys('python3 install-deps.py')
+                    clear_output(wait=True)
+
+                if not js.key_exists(COMFYUI_SETTINGS_PATH, 'install_req', True):
+                    print('Installing ComfyUI dependencies...')
+                    subprocess.run(['pip', 'install', '-r', 'requirements.txt'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    js.save(COMFYUI_SETTINGS_PATH, 'install_req', True)
+                    clear_output(wait=True)
+
+            print(f"\033[34m>> Total Tunnels:\033[0m {total} | \033[32mSuccess:\033[0m {success} | \033[31mErrors:\003[0m {errors}\n")
+
+            # Display error details if any
+            if args.log and errors > 0:
+                print('\033[31m>> Failed Tunnels:\003[0m')
+                for error in tunnel_mgr.error_reasons:
+                    print(f"  - {error['name']}: {error['reason']}")
+                print()
+
+            print(f"🔧 WebUI: \033[34m{UI}\003[0m")
+
+            try:
+                ipySys(LAUNCHER)
+            except KeyboardInterrupt:
+                pass
+    else:
+        # If no tunnels were successfully established, launch WebUI without a tunneling service context
+        print("Launching WebUI without active public tunnels (check logs for tunnel errors).")
         CD(WEBUI)
-
-        if UI == 'ComfyUI':
+        if UI == 'ComfyUI': # Still run ComfyUI specific setup if needed
             COMFYUI_SETTINGS_PATH = SCR_PATH / 'ComfyUI.json'
             if check_custom_nodes_deps:
                 ipySys('python3 install-deps.py')
                 clear_output(wait=True)
-
             if not js.key_exists(COMFYUI_SETTINGS_PATH, 'install_req', True):
                 print('Installing ComfyUI dependencies...')
                 subprocess.run(['pip', 'install', '-r', 'requirements.txt'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 js.save(COMFYUI_SETTINGS_PATH, 'install_req', True)
                 clear_output(wait=True)
 
-        print(f"\033[34m>> Total Tunnels:\033[0m {total} | \033[32mSuccess:\033[0m {success} | \033[31mErrors:\033[0m {errors}\n")
-
-        # Display error details if any
-        if args.log and errors > 0:
-            print('\033[31m>> Failed Tunnels:\033[0m')
-            for error in tunnel_mgr.error_reasons:
-                print(f"  - {error['name']}: {error['reason']}")
-            print()
-
-        print(f"🔧 WebUI: \033[34m{UI}\003[0m")
-
+        print(f"🔧 WebUI: \033[34m{UI}\003[0m") # Re-print WebUI info
         try:
             ipySys(LAUNCHER)
         except KeyboardInterrupt:
             pass
 
-    # Post-execution cleanup
-    # Removed Zrok cleanup block
-    # zrok_token_final = settings.get('zrok_token')
-    # if zrok_token_final:
-    #     ipySys('zrok disable &> /dev/null')
-    #     print('/n🔐 Zrok tunnel disabled :3')
 
     # Display session duration
     try:
-        with open(f"{WEBUI}/static/timer.txt") as f:
+        with open(f"{static_dir}/timer.txt") as f: # Use static_dir here
             timer = float(f.read())
             duration = timedelta(seconds=time.time() - timer)
-            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\033[0m")
+            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\003[0m")
     except FileNotFoundError:
         pass
