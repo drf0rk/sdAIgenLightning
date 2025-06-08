@@ -98,6 +98,9 @@ if latest_webui or latest_extensions:
     if latest_webui:
         subprocess.run(['git', '-C', str(WEBUI_PATH), 'pull'], capture_output=True)
     if latest_extensions:
+        # --- MODIFICATION START ---
+        os.makedirs(extension_dir, exist_ok=True) # Ensure the directory exists before listing
+        # --- MODIFICATION END ---
         for entry in os.listdir(str(extension_dir)):
             dir_path = os.path.join(str(extension_dir), entry)
             if os.path.isdir(dir_path) and os.path.exists(os.path.join(dir_path, '.git')):
