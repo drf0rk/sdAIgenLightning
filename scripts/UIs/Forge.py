@@ -95,6 +95,20 @@ async def download_configuration():
         ## OTHER | ON
         'https://github.com/Bing-su/adetailer',
 
+        ## NEW Extensions
+        'https://github.com/Haoming02/sd-webui-mosaic-outpaint',
+        'https://github.com/continue-revolution/sd-webui-segment-anything',
+        'https://github.com/kainatquaderee/sd-webui-reactor-Nsfw_freedom',
+        'https://github.com/a2569875/lora-prompt-tool',
+        'https://github.com/Uminosachi/sd-webui-inpaint-anything',
+        'https://github.com/redmercy69/sd-webui-stripper',
+        'https://github.com/diffus-me/sd-webui-facefusion',
+        'https://github.com/glucauze/sd-webui-faceswaplab',
+        'https://github.com/IntellectzProductions/sd-webui-faceswap',
+        'https://github.com/yownas/sd-webui-faceswapper',
+        'https://github.com/leeguandong/sd_webui_outpainting',
+        'https://github.com/thoraxe69/sd-webui-roop',
+
         ## OTHER | OFF
         # 'https://github.com/thomasasfk/sd-webui-aspect-ratio-helper Aspect-Ratio-Helper',
         # 'https://github.com/zanllp/sd-webui-infinite-image-browsing Infinite-Image-Browsing',
