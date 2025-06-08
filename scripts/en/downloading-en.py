@@ -76,7 +76,7 @@ def handle_submodels(selections, model_dict, dst_dir, inpainting=False):
             for model_group in model_dict.values():
                 if isinstance(model_group, list):
                     for item in model_group:
-                         download_list.append(f"\"{item['url']}\" \"{dst_dir}\" \"{item.get('name')}\"")
+                         download_list.append(f"{item['url']} {dst_dir} {item.get('name')}") # Removed quotes
             continue
         
         if selection_name in model_dict:
@@ -86,7 +86,7 @@ def handle_submodels(selections, model_dict, dst_dir, inpainting=False):
                     name = model_info.get('name') or os.path.basename(model_info['url'])
                     if not inpainting and "inpainting" in name.lower():
                         continue
-                    download_list.append(f"\"{model_info['url']}\" \"{dst_dir}\" \"{name}\"")
+                    download_list.append(f"{model_info['url']} {dst_dir} {name}") # Removed quotes
     return download_list
 
 # --- Main Execution ---
@@ -98,9 +98,7 @@ if latest_webui or latest_extensions:
     if latest_webui:
         subprocess.run(['git', '-C', str(WEBUI_PATH), 'pull'], capture_output=True)
     if latest_extensions:
-        # --- MODIFICATION START ---
         os.makedirs(extension_dir, exist_ok=True) # Ensure the directory exists before listing
-        # --- MODIFICATION END ---
         for entry in os.listdir(str(extension_dir)):
             dir_path = os.path.join(str(extension_dir), entry)
             if os.path.isdir(dir_path) and os.path.exists(os.path.join(dir_path, '.git')):
