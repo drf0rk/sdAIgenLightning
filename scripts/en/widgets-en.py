@@ -36,22 +36,22 @@ def get_platform_paths():
         'lora': SHARED_MODEL_BASE / 'Lora',
         'embeddings': SHARED_MODEL_BASE / 'embeddings',
         'controlnet': SHARED_MODEL_BASE / 'ControlNet',
-        'adetailer': SHARED_MODEL_BASE / 'adetailer', 
-        'clip': SHARED_MODEL_BASE / 'text_encoder', 
-        'unet': SHARED_MODEL_BASE / 'unet', 
-        'vision': SHARED_MODEL_BASE / 'clip_vision', 
-        'encoder': SHARED_MODEL_BASE / 'text_encoder', 
-        'diffusion': SHARED_MODEL_BASE / 'diffusion_models', 
-        'upscale': SHARED_MODEL_BASE / 'ESRGAN', 
+        'adetailer': SHARED_MODEL_BASE / 'adetailer',
+        'clip': SHARED_MODEL_BASE / 'text_encoder',
+        'unet': SHARED_MODEL_BASE / 'unet',
+        'vision': SHARED_MODEL_BASE / 'clip_vision',
+        'encoder': SHARED_MODEL_BASE / 'text_encoder',
+        'diffusion': SHARED_MODEL_BASE / 'diffusion_models',
+        'upscale': SHARED_MODEL_BASE / 'ESRGAN',
 
         # UI-specific directories (these are typically within the WebUI's own folder)
         # Note: 'base' here means the root of the studio, not the specific UI's folder.
         # The actual UI folder path (WEBUI) is determined later by settings.
         # We ensure these paths are created, assuming they are general top-level dirs.
-        'outputs': base / 'outputs', 
+        'outputs': base / 'outputs',
         'extensions_root': base / 'extensions', # This is where generic extensions might be cloned if not UI-specific
         'config_root': base / 'config', # Generic config root
-        
+
         # Temporary/Cache directories (often global or in /tmp)
         'temp': Path('/tmp/sdaigen') if PLATFORM == 'lightning' else base / 'temp',
         'cache': base / '.cache'
@@ -172,7 +172,7 @@ def read_model_data(file_path, data_key_in_file, prefixes=['none']):
     local_vars = {}
     with open(file_path) as f:
         exec(f.read(), {}, local_vars)
-    
+
     # Safely get the nested dictionary if data_key_in_file is like 'lora_data.sd15_loras'
     data_dict = local_vars
     for key_part in data_key_in_file.split('.'):
@@ -202,7 +202,7 @@ HR = widgets.HTML('<hr>')
 """Create model selection widgets."""
 model_header = factory.create_header('Model Selection')
 model_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'model_list') # Updated key here
-model_widget = factory.create_dropdown(model_options, 'Model:', '4. Counterfeit [Anime] [V3] + INP')
+model_widget = factory.create_dropdown(model_options, 'Model:', '1. AcornMoarMindBreak [SD1.5]')
 model_num_widget = factory.create_text('Model Number:', '', 'Enter model numbers for download.')
 inpainting_model_widget = factory.create_checkbox('Inpainting Models', False, class_names=['inpaint'], layout={'width': '25%'})
 XL_models_widget = factory.create_checkbox('SDXL', False, class_names=['sdxl'])
@@ -213,7 +213,7 @@ switch_model_widget = factory.create_hbox([inpainting_model_widget, XL_models_wi
 """Create VAE selection widgets."""
 vae_header = factory.create_header('VAE Selection')
 vae_options = read_model_data(f"{SCRIPTS}/_models-data.py", 'vae_list') # Updated key here
-vae_widget = factory.create_dropdown(vae_options, 'Vae:', '3. Blessed2.vae')
+vae_widget = factory.create_dropdown(vae_options, 'Vae:', '1. SD1.5 VAE 1')
 vae_num_widget = factory.create_text('Vae Number:', '', 'Enter vae numbers for download.')
 
 # --- LORA (NEW SECTION) ---
@@ -309,9 +309,20 @@ custom_download_header_popup = factory.create_html('''
 </div>
 ''')
 
-empowerment_widget = factory.create_checkbox('Empowerment', False, class_names=['empowerment'])
+# MODIFICATION: Set Empowerment to True by default to automatically process the pre-filled text area
+empowerment_widget = factory.create_checkbox('Empowerment', True, class_names=['empowerment'])
+
+# MODIFICATION: Pre-fill the empowerment text area with the requested embeddings
+prefilled_empowerment_text = """
+# Pre-loaded Embeddings (will be downloaded automatically)
+embed:https://huggingface.co/Remphanstar/Rojos/resolve/main/bastard_unrestricted_D_15-20.bin?download=true[bastard_unrestricted_D_15-20.bin]
+embed:https://huggingface.co/Remphanstar/Rojos/resolve/main/bastard_unrestricted_C_5-15.bin?download=true[bastard_unrestricted_C_5-15.bin]
+embed:https://huggingface.co/Remphanstar/Rojos/resolve/main/bastard_unrestricted_C2_10-15.bin?download=true[bastard_unrestricted_C2_10-15.bin]
+embed:https://huggingface.co/Remphanstar/Rojos/resolve/main/bastard_unrestricted_B_5-10.bin?download=true[bastard_unrestricted_B_5-10.bin]
+embed:https://huggingface.co/Remphanstar/Rojos/resolve/main/bastard_unrestricted_A_0-5.bin?download=true[bastard_unrestricted_A_0-5.bin]
+"""
 empowerment_output_widget = factory.create_textarea(
-'', '', """Use special tags. Portable analog of "File (txt)"
+'', prefilled_empowerment_text, """Use special tags. Portable analog of "File (txt)"
 Tags: model (ckpt), vae, lora, embed (emb), extension (ext), adetailer (ad), control (cnet), upscale (ups), clip, unet, vision (vis), encoder (enc), diffusion (diff), config (cfg)
 Short tags: start with '$' without a space -> $ckpt
 ------ Example ------
@@ -408,15 +419,16 @@ factory.display(WIDGET_LIST)
 # Initialize visibility | hidden
 check_custom_nodes_deps_widget.layout.display = 'none'
 empowerment_output_widget.add_class('empowerment-output')
-empowerment_output_widget.add_class('hidden')
+# MODIFICATION: Remove 'hidden' class by default since empowerment is on
+# empowerment_output_widget.add_class('hidden')
 
 # Callback functions for XL options
 def update_XL_options(change, widget):
     selected = change['new']
 
     default_model_values = {
-        True: ('4. WAI-illustrious [Anime] [V14] [XL]', 'none', 'none'),           # XL models
-        False: ('4. Counterfeit [Anime] [V3] + INP', '3. Blessed2.vae', 'none')    # SD 1.5 models
+        True: ('1. Sippy [SDXL]', '1. SDXL VAE 1', 'none'), # XL models
+        False: ('1. AcornMoarMindBreak [SD1.5]', '1. SD1.5 VAE 1', 'none') # SD 1.5 models
     }
 
     # Get data - MODELs | VAEs | CNETs
@@ -473,7 +485,6 @@ def update_empowerment(change, widget):
     for widget in customDL_widgets:    # For switching animation
         widget.add_class('empowerment-text-field')
 
-    # idk why, but that's the way it's supposed to be >_<'
     if selected_emp:
         for wg in customDL_widgets:
             wg.add_class('hidden')
@@ -482,6 +493,9 @@ def update_empowerment(change, widget):
         for wg in customDL_widgets:
             wg.remove_class('hidden')
         empowerment_output_widget.add_class('hidden')
+
+# MODIFICATION: Trigger update_empowerment initially to set the correct view
+update_empowerment({'new': empowerment_widget.value}, empowerment_widget)
 
 # Connecting widgets
 factory.connect_widgets([(change_webui_widget, 'value')], update_change_webui)
@@ -517,7 +531,8 @@ def load_settings():
     if js.key_exists(SETTINGS_PATH, 'WIDGETS'):
         widget_data = js.read(SETTINGS_PATH, 'WIDGETS')
         for key in SETTINGS_KEYS:
-            if key in widget_data:
+            # MODIFICATION: Do not load 'empowerment' and 'empowerment_output' to preserve the new defaults
+            if key in widget_data and key not in ['empowerment', 'empowerment_output']:
                 globals()[f"{key}_widget"].value = widget_data.get(key, '')
 
     # Load Status GDrive-btn
