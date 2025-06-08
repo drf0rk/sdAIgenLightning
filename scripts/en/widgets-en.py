@@ -5,7 +5,13 @@ from IPython.display import display, HTML
 
 # --- Define Absolute Base Path ---
 # This makes file lookups robust and independent of the current working directory.
-BASE_DIR = "/teamspace/studios/this_studio/ANXETY"
+try:
+    # This works when run from the notebook via %run
+    BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'ANXETY'))
+except:
+    # Fallback for other execution contexts
+    BASE_DIR = "/teamspace/studios/this_studio/ANXETY"
+
 MODULES_DIR = os.path.join(BASE_DIR, 'modules')
 SCRIPTS_DIR = os.path.join(BASE_DIR, 'scripts')
 if MODULES_DIR not in sys.path:
@@ -21,7 +27,6 @@ from widget_factory import WidgetFactory
 def read_and_combine_data(file_map):
     """
     Reads multiple data files, executes them, and combines keys from specified dictionaries.
-    The file_map should use absolute paths.
     """
     all_options = []
     
@@ -74,6 +79,10 @@ lora_options = read_and_combine_data(lora_map)
 vae_map = { SD15_DATA_FILE: ["sd15_vae_data"], SDXL_DATA_FILE: ["sdxl_vae_data"] }
 vae_options = read_and_combine_data(vae_map)
 
+controlnet_map = { SD15_DATA_FILE: ["sd15_controlnet_list"], SDXL_DATA_FILE: ["sdxl_controlnet_list"] }
+controlnet_options = read_and_combine_data(controlnet_map)
+
+
 # --- Create Widgets using the combined data ---
 # Use the first item in the list as a safe default to prevent crashes.
 
@@ -86,19 +95,11 @@ model_widget = factory.create_dropdown(model_options, 'Model:', model_default, '
 lora_header = factory.create_header('LoRA Selection')
 lora_default = lora_options[0] if lora_options else None
 lora_widget = factory.create_dropdown(lora_options, 'LoRA:', lora_default, 'No LoRAs found')
-
-# *** THIS IS THE CORRECTED CODE FOR THE SLIDER WIDGET ***
 lora_strength_widget = widgets.FloatSlider(
-    value=0.7,
-    min=0.0,
-    max=1.0,
-    step=0.05,
-    description='LoRA Strength:',
-    style={'description_width': 'initial'},
-    layout=Layout(width='100%')
+    value=0.7, min=0.0, max=1.0, step=0.05, description='LoRA Strength:',
+    style={'description_width': 'initial'}, layout=Layout(width='100%')
 )
 lora_strength_widget.add_class('lora-strength')
-# *** END OF CORRECTION ***
 
 # VAE Widgets
 vae_header = factory.create_header('VAE Selection')
@@ -107,10 +108,17 @@ vae_widget = factory.create_dropdown(vae_options, 'VAE:', vae_default, 'No VAEs 
 
 # ControlNet Widgets
 controlnet_header = factory.create_header('ControlNet Selection')
-controlnet_map = { SD15_DATA_FILE: ["sd15_controlnet_list"], SDXL_DATA_FILE: ["sdxl_controlnet_list"] }
-controlnet_options = read_and_combine_data(controlnet_map)
-controlnet_default = controlnet_options[0] if controlnet_options else None
-controlnet_widget = factory.create_multiselect(controlnet_options, 'ControlNet Models:', [controlnet_default] if controlnet_default else [])
+controlnet_default = [controlnet_options[0]] if controlnet_options else []
+# *** THIS IS THE CORRECTED CODE FOR THE MULTI-SELECT WIDGET ***
+controlnet_widget = widgets.SelectMultiple(
+    options=controlnet_options,
+    value=controlnet_default,
+    description='ControlNet Models:',
+    style={'description_width': 'initial'},
+    layout=Layout(width='100%'),
+    rows=8
+)
+# *** END OF CORRECTION ***
 
 # Download Options
 download_header = factory.create_header('Download Options')
