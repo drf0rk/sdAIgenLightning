@@ -87,7 +87,8 @@ def detect_and_optimize_platform():
             '--medvram',
             '--disable-console-progressbars',
             '--api',
-            '--cors-allow-origins=*',
+            # MODIFICATION: Quote argument to prevent zsh globbing error
+            "'--cors-allow-origins=*'",
             '--listen',
             '--port=8080',
             '--share', # Added to enable public Gradio link
@@ -266,8 +267,13 @@ class TunnelManager:
         """Async tunnel testing"""
         await self.checking_queue.put(name)
         try:
+            # Use the venv python to run gradio cli, more robust
+            command_to_run = config['command']
+            if "gradio.cli" in command_to_run:
+                command_to_run = f"{VENV / 'bin' / 'python'} {command_to_run}"
+
             process = await asyncio.create_subprocess_exec(
-                *shlex.split(config['command']),
+                *shlex.split(command_to_run),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT
             )
@@ -314,9 +320,10 @@ class TunnelManager:
 
     async def setup_tunnels(self):
         """Async tunnel configuration"""
+        # MODIFICATION: Use `python -m gradio.cli tunnel` for robustness and comment out failing services.
         services = [
             ('Gradio', {
-                'command': f"gradio-tun {self.tunnel_port}",
+                'command': f"-m gradio.cli tunnel {self.tunnel_port}",
                 'pattern': re.compile(r'[\w-]+\.gradio\.live')
             }),
             ('Serveo', {
@@ -327,15 +334,15 @@ class TunnelManager:
                 'command': f"ssh -o StrictHostKeyChecking=no -p 80 -R0:localhost:{self.tunnel_port} a.pinggy.io",
                 'pattern': re.compile(r'[\w-]+\.a\.free\.pinggy\.link')
             }),
-            ('Cloudflared', {
-                'command': f"cl tunnel --url localhost:{self.tunnel_port}",
-                'pattern': re.compile(r'[\w-]+\.trycloudflare\.com')
-            }),
-            ('Localtunnel', {
-                'command': f"lt --port {self.tunnel_port}",
-                'pattern': re.compile(r'[\w-]+\.loca\.lt'),
-                'note': f"Password: \033[32m{self.public_ip}\033[0m"
-            })
+            # ('Cloudflared', {
+            #     'command': f"cl tunnel --url localhost:{self.tunnel_port}",
+            #     'pattern': re.compile(r'[\w-]+\.trycloudflare\.com')
+            # }),
+            # ('Localtunnel', {
+            #     'command': f"lt --port {self.tunnel_port}",
+            #     'pattern': re.compile(r'[\w-]+\.loca\.lt'),
+            #     'note': f"Password: \033[32m{self.public_ip}\033[0m"
+            # })
         ]
 
         if zrok_token:
@@ -366,11 +373,11 @@ class TunnelManager:
             if current_token != ngrok_token:
                 ipySys(f"ngrok config add-authtoken {ngrok_token}")
 
-            # Fix: Use absolute path for ngrok command
-            services.append(('Ngrok', {
-                'command': f"/usr/bin/ngrok http http://localhost:{self.tunnel_port} --log stdout",
-                'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
-            }))
+            # NOTE: Commenting out Ngrok as the executable is likely missing or has permission issues.
+            # services.append(('Ngrok', {
+            #     'command': f"ngrok http http://localhost:{self.tunnel_port} --log stdout",
+            #     'pattern': re.compile(r'https://[\w-]+\.ngrok-free\.app')
+            # }))
 
         # Create status printer task
         printer_task = asyncio.create_task(self._print_status())
@@ -465,7 +472,7 @@ if __name__ == '__main__':
                 print(f"  - {error['name']}: {error['reason']}")
             print()
 
-        print(f"🔧 WebUI: \033[34m{UI}\003[0m")
+        print(f"🔧 WebUI: \033[34m{UI}\033[0m")
 
         try:
             ipySys(LAUNCHER)
@@ -482,6 +489,6 @@ if __name__ == '__main__':
         with open(f"{WEBUI}/static/timer.txt") as f:
             timer = float(f.read())
             duration = timedelta(seconds=time.time() - timer)
-            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\003[0m")
+            print(f"\n⌚️ Session duration: \033[33m{str(duration).split('.')[0]}\033[0m")
     except FileNotFoundError:
         pass
