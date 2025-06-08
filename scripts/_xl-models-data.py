@@ -1,25 +1,31 @@
 ## MODEL
 
 model_list = {
-    "1. Hassaku-XL [Anime] [V2.2] [XL]": [
-        {'url': "https://civitai.com/api/download/models/1697082", 'name': "HassakuXL-illustrious_V22.safetensors"}
+    "1. Sippy by Red1618 [SDXL]": [
+        {'url': "https://huggingface.co/Red1618/Zhu/resolve/main/Sippy.safetensors?download=true", 'name': "Sippy.safetensors"}
     ],
-    "2. Nova IL [Anime] [V8] [XL]": [
-        {'url': "https://civitai.com/api/download/models/1854228", 'name': "NovaIL_V8.safetensors"}
+    "2. DWXL Inpainting by Remphanstar [SDXL]": [
+        {'url': "https://huggingface.co/Remphanstar/Rojos/resolve/main/SDXL-DWXL.fp16.safetensors", 'name': "SDXL-DWXL.fp16-inpainting.safetensors"}
     ],
-    "3. NoobAI [Anime] [VP-1.0] [XL]": [
-        {'url': "https://civitai.com/api/download/models/1190596", 'name': "NoobAI_VP1.safetensors"}
+    "3. Juggernaut XL v9 Inpainting [SDXL]": [
+        {'url': "https://civitai.com/api/download/models/907265?type=Model&format=SafeTensor&size=full&fp=fp16", 'name': "juggernautXL_v9Rundiffusionphoto2Inpainting.safetensors"}
     ],
-    "4. WAI-illustrious [Anime] [V14] [XL]": [
-        {'url': "https://civitai.com/api/download/models/1761560", 'name': "WAI-illustrious_V14.safetensors"}
+    "4. RealCartoon XL v4 Inpainting [SDXL]": [
+        {'url': "https://civitai.com/api/download/models/1024962?type=Model&format=SafeTensor&size=full&fp=fp16", 'name': "realcartoonXL_v4Inpainting.safetensors"}
     ]
 }
 
 ## VAE
 
 vae_list = {
-    "1. sdxl.vae": [
-        {'url': "https://civitai.com/api/download/models/333245", 'name': "sdxl.vae.safetensors"}
+    "1. SDXL VAE fp16 (ID: 155933)": [
+        {'url': "https://civitai.com/api/download/models/155933?type=Model&format=SafeTensor", 'name': "sdxl_vae.safetensors"}
+    ],
+    "2. Juggernaut VAE (ID: 785437)": [
+        {'url': "https://civitai.com/api/download/models/785437?type=Model&format=SafeTensor", 'name': "juggernaut_vae.safetensors"}
+    ],
+    "3. Default SDXL VAE (ID: 333245)": [
+        {'url': "https://civitai.com/api/download/models/333245?type=Model&format=SafeTensor", 'name': "sdxl.vae.safetensors"}
     ]
 }
 
