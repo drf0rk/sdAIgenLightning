@@ -6,7 +6,7 @@ from IPython.display import display, HTML
 # --- Define Absolute Base Path ---
 # This makes file lookups robust and independent of the current working directory.
 try:
-    # This works when run from the notebook via %run, assuming ANXETY is in the current dir
+    # This works when run from the notebook via %run
     BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'ANXETY'))
 except NameError:
     # Fallback for other execution contexts
@@ -114,15 +114,14 @@ controlnet_widget = widgets.SelectMultiple(
 # Download Options
 download_header = factory.create_header('Download Options')
 # *** THIS IS THE CORRECTED CODE FOR THE BUTTONS ***
-# The factory.create_button only accepts (description, button_style)
+# The create_button function only takes description and an optional button_style.
 download_button = factory.create_button('Download Selected', 'primary')
 config_name_widget = factory.create_text('Config Name:', placeholder='e.g. my-config')
 save_config_widget = factory.create_button('Save Config', 'success')
-# Manually add classes if needed, as the factory doesn't handle it for buttons
+# Manually add classes as was done in the original script
 download_button.add_class('download-button')
 save_config_widget.add_class('save-button')
 # *** END OF CORRECTION ***
-
 
 # Display all widgets
 display(
